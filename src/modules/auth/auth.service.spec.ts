@@ -3,12 +3,14 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
+import type { User } from '../user/entity/user.entity';
 import { UserService } from '../user/user.service';
-import { User } from '../user/entity/user.entity';
+import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;

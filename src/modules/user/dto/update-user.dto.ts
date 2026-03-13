@@ -4,6 +4,7 @@
  */
 
 import {OmitType, PartialType} from '@nestjs/swagger';
+
 import {CreateUserDto} from './create-user.dto';
 
 class UpdateUserBaseDto extends OmitType(CreateUserDto, [

@@ -3,12 +3,14 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { LlmSessionService } from './llm-session.service';
-import { LlmSession } from './entity/llm-session.entity';
-import { LlmMessage } from './entity/llm-message.entity';
 import { Task } from 'src/modules/task/entities/task.entity';
+
+import { LlmMessage } from './entity/llm-message.entity';
+import { LlmSession } from './entity/llm-session.entity';
+import { LlmSessionService } from './llm-session.service';
 
 describe('LlmSessionService', () => {
   let service: LlmSessionService;

@@ -3,18 +3,28 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
-import { IcfService } from './icf.service';
-import { Icf } from './entity/icf.entity';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
+import type { Experiment} from '../experiment/entity/experiment.entity';
+import { ExperimentStatus } from '../experiment/entity/experiment.entity';
 import { ExperimentService } from '../experiment/experiment.service';
-import { CreateIcfDto } from './dto/create-icf.dto';
-import { UpdateIcfDto } from './dto/update-icf.dto';
+import type { CreateIcfDto } from './dto/create-icf.dto';
+import type { UpdateIcfDto } from './dto/update-icf.dto';
+import { Icf } from './entity/icf.entity';
+import { IcfService } from './icf.service';
 
 describe('IcfService', () => {
   let service: IcfService;
-  let icfRepository: any;
+  let icfRepository: {
+    save: jest.Mock;
+    find: jest.Mock;
+    findOne: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
   let experimentService: ExperimentService;
 
   beforeEach(async () => {
@@ -48,19 +58,23 @@ describe('IcfService', () => {
   describe('create', () => {
     it('should create an ICF when experiment exists', async () => {
       const createIcfDto: CreateIcfDto = { title: 'Test', description: 'Desc', experimentId: '1' };
-      const experiment = { 
+      const experiment = {
         _id: '1', 
         name: 'Test Experiment',
         owner_id: 'owner-1',
+        owner: null,
         summary: 'Test Summary',
         typeExperiment: 'within-subject',
         betweenExperimentType: null,
-        status: 'NOT_STARTED',
+        status: ExperimentStatus.NOT_STARTED,
+        isActive: true,
+        createdAt: new Date(),
+        lastChangeAt: new Date(),
         tasks: [],
         userExperiments: [],
         surveys: [],
         icfs: [],
-      } as any;
+      } as Experiment;
       const savedIcf = { _id: 'icf-1', ...createIcfDto, experiment };
 
       jest.spyOn(experimentService, 'find').mockResolvedValue(experiment);

@@ -10,11 +10,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Icf } from './entity/icf.entity';
 import { Repository } from 'typeorm';
+
+import { ExperimentService } from '../experiment/experiment.service';
 import { CreateIcfDto } from './dto/create-icf.dto';
 import { UpdateIcfDto } from './dto/update-icf.dto';
-import { ExperimentService } from '../experiment/experiment.service';
+import { Icf } from './entity/icf.entity';
 
 @Injectable()
 export class IcfService {
@@ -46,20 +47,14 @@ export class IcfService {
   }
 
   async findOneByExperimentId(experimentId: string): Promise<Icf> {
-    try {
       return await this.icfRepository.findOne({
         where: { experiment_id: experimentId },
       });
-    } catch (error) { }
   }
 
   async update(id: string, updateIcfDto: UpdateIcfDto): Promise<Icf> {
-    try {
       await this.icfRepository.update({ _id: id }, updateIcfDto);
       return await this.find(id);
-    } catch (error) {
-      throw error;
-    }
   }
 
   async remove(id: string): Promise<Icf> {

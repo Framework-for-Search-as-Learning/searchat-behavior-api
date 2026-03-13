@@ -4,10 +4,6 @@
  */
 
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { SurveyAnswerService } from './survey-answer.service';
-import { CreateSurveyAnswerDto } from './dto/create-surveyAnswer.dto';
-import { SurveyAnswer } from './entity/survey-answer.entity';
-import { UpdateSurveyAnswerDto } from './dto/update-surveyAnswer.dto';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -18,7 +14,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+
+import { CreateSurveyAnswerDto } from './dto/create-surveyAnswer.dto';
 import { SurveyAnswerResponseDto } from './dto/survey-answer-response.dto';
+import { UpdateSurveyAnswerDto } from './dto/update-surveyAnswer.dto';
+import { SurveyAnswer } from './entity/survey-answer.entity';
+import { SurveyAnswerService } from './survey-answer.service';
 
 @ApiTags('Survey Answer')
 @ApiBearerAuth('jwt')

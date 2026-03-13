@@ -24,14 +24,15 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserExperimentService } from './user-experiment.service';
-import { CreateUserExperimentDto } from './dto/create-userExperiment.dto';
-import { UserExperiment } from './entities/user-experiments.entity';
-import { UpdateUserExperimentDto } from './dto/update-userExperiment.dto';
-import { GetUserDto } from 'src/modules/user/dto/user.dto';
-import { User } from '../user/entity/user.entity';
-import { UserExperimentResponseDto } from './dto/user-experiment-response.dto';
 import { CountUsersResponseDto } from 'src/common/dto/api-responses.dto';
+import { GetUserDto } from 'src/modules/user/dto/user.dto';
+
+import { User } from '../user/entity/user.entity';
+import { CreateUserExperimentDto } from './dto/create-userExperiment.dto';
+import { UpdateUserExperimentDto } from './dto/update-userExperiment.dto';
+import { UserExperimentResponseDto } from './dto/user-experiment-response.dto';
+import { UserExperiment } from './entities/user-experiments.entity';
+import { UserExperimentService } from './user-experiment.service';
 
 @ApiTags('User Experiment')
 @ApiBearerAuth('jwt')

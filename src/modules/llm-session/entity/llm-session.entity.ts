@@ -3,15 +3,16 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
+import { Task } from 'src/modules/task/entities/task.entity';
+import { User } from 'src/modules/user/entity/user.entity';
 import {
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
 import { LlmMessage } from './llm-message.entity';
-import { Task } from 'src/modules/task/entities/task.entity';
-import { User } from 'src/modules/user/entity/user.entity';
 
 @Entity('llm_sessions')
 export class LlmSession {

@@ -3,18 +3,19 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
+import { Content, GoogleGenerativeAI } from '@google/generative-ai';
 import {
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LlmSession } from './entity/llm-session.entity';
-import { Repository } from 'typeorm';
-import { LlmMessage } from './entity/llm-message.entity';
 import { Task } from 'src/modules/task/entities/task.entity';
 import { User } from 'src/modules/user/entity/user.entity';
-import { Content, GoogleGenerativeAI } from '@google/generative-ai';
+import { Repository } from 'typeorm';
+
+import { LlmMessage } from './entity/llm-message.entity';
+import { LlmSession } from './entity/llm-session.entity';
 
 @Injectable()
 export class LlmSessionService {
@@ -115,7 +116,7 @@ export class LlmSessionService {
       };
     } catch (error) {
       console.error('Error Gemini:', error);
-      throw new Error('Error processing Gemini AI response');
+      throw new Error('Error processing Gemini AI response', {cause: error});
     }
   }
 

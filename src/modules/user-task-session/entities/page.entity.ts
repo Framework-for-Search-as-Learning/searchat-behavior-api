@@ -5,6 +5,7 @@
 
 import {BaseEntity} from 'src/model/base-entity';
 import {Column, Entity, ManyToOne} from 'typeorm';
+
 import {UserTaskSession} from './user-task-session.entity';
 
 @Entity()

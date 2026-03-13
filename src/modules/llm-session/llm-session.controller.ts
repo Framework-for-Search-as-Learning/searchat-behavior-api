@@ -4,8 +4,6 @@
  */
 
 import { Body, Controller, Param, Post, Res, UseGuards } from '@nestjs/common';
-import { LlmSessionService } from './llm-session.service';
-import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -16,7 +14,10 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Response } from 'express';
+
 import { LlmSessionResponseDto } from './dto/llm-session-response.dto';
+import { LlmSessionService } from './llm-session.service';
 
 @ApiTags('LLM Session')
 @ApiBearerAuth('jwt')

@@ -3,12 +3,15 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Req, Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { LoginResponseDto } from './dto/login-response.dto';
+import type { Request } from 'express';
 import { ErrorResponseDto } from 'src/common/dto/api-responses.dto';
+
+import { User } from '../user/entity/user.entity';
+import { AuthService } from './auth.service';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @ApiTags('Auth')
 @Controller()
@@ -37,7 +40,7 @@ export class AuthController {
     type: LoginResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials.', type: ErrorResponseDto })
-  async login(@Req() req: any) {
+  async login(@Req() req: Request & { user: User }) {
     return this.authService.loginWithCredentials(req.user);
   }
 }

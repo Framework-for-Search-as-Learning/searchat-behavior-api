@@ -3,7 +3,9 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { SurveyAnswerController } from './survey-answer.controller';
 import { SurveyAnswerService } from './survey-answer.service';
 

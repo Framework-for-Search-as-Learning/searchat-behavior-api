@@ -9,6 +9,8 @@ import { SurveyAnswer } from 'src/modules/survey-answer/entity/survey-answer.ent
 import { Task } from 'src/modules/task/entities/task.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
+import { QuestionDTO } from '../dto/question.dto';
+
 export enum SurveyType {
   PRE = 'pre',
   POST = 'post',
@@ -24,7 +26,7 @@ export class Survey extends BaseEntity {
   @Column()
   description: string;
   @Column({ type: 'jsonb' })
-  questions: any[];
+  questions: QuestionDTO[];
   @Column({
     type: 'enum',
     enum: SurveyType,

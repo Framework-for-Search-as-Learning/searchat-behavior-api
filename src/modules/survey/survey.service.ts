@@ -11,14 +11,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
-import {Survey} from './entity/survey.entity';
 import {Repository} from 'typeorm';
-import {CreateSurveyDto} from './dto/create-survey.dto';
-import {UpdateSurveyDto} from './dto/update-survey.dto';
+
 import {ExperimentService} from '../experiment/experiment.service';
 import {SurveyAnswerService} from '../survey-answer/survey-answer.service';
-import {SurveyStatsDto, SurveyQuestionStatDto} from './dto/survey-stats.dto';
+import {CreateSurveyDto} from './dto/create-survey.dto';
 import {QuestionType} from './dto/question.dto';
+import {SurveyQuestionStatDto,SurveyStatsDto} from './dto/survey-stats.dto';
+import {UpdateSurveyDto} from './dto/update-survey.dto';
+import {Survey} from './entity/survey.entity';
 
 @Injectable()
 export class SurveyService {

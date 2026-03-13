@@ -7,8 +7,8 @@ import { BaseEntity } from 'src/model/base-entity';
 import { Icf } from 'src/modules/icf/entity/icf.entity';
 import { Survey } from 'src/modules/survey/entity/survey.entity';
 import { Task } from 'src/modules/task/entities/task.entity';
-import { UserExperiment } from 'src/modules/user-experiment/entities/user-experiments.entity';
 import { User } from 'src/modules/user/entity/user.entity';
+import { UserExperiment } from 'src/modules/user-experiment/entities/user-experiments.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 enum SurveyType {

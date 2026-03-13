@@ -4,12 +4,13 @@
  */
 
 import { Module } from '@nestjs/common';
-import { LlmSessionService } from './llm-session.service';
-import { LlmSessionController } from './llm-session.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { LlmSession } from './entity/llm-session.entity';
-import { LlmMessage } from './entity/llm-message.entity';
 import { Task } from 'src/modules/task/entities/task.entity';
+
+import { LlmMessage } from './entity/llm-message.entity';
+import { LlmSession } from './entity/llm-session.entity';
+import { LlmSessionController } from './llm-session.controller';
+import { LlmSessionService } from './llm-session.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([LlmSession, LlmMessage, Task])],

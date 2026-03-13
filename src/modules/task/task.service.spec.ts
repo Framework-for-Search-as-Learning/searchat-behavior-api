@@ -3,13 +3,15 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { TaskService } from './task.service';
-import { Task } from './entities/task.entity';
+
 import { ExperimentService } from '../experiment/experiment.service';
 import { SurveyService } from '../survey/survey.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
+import { Task } from './entities/task.entity';
+import { TaskService } from './task.service';
 
 describe('TaskService', () => {
   let service: TaskService;

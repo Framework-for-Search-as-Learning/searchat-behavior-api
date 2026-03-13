@@ -4,10 +4,11 @@
  */
 
 import { BaseEntity } from 'src/model/base-entity';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
-import { Page } from './page.entity';
 import { Task } from 'src/modules/task/entities/task.entity';
 import { User } from 'src/modules/user/entity/user.entity';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+
+import { Page } from './page.entity';
 
 @Entity()
 export class UserTaskSession extends BaseEntity {

@@ -25,5 +25,5 @@ export class TimeEditUserTaskDto {
   resumeTime?: Date[];
 
   @ApiProperty({ description: 'Additional metadata', required: false })
-  metadata?: any | null;
+  metadata?: Record<string, unknown> | null;
 }

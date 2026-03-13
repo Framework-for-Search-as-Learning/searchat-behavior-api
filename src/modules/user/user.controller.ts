@@ -15,32 +15,33 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {UserService} from './user.service';
+import {AuthGuard} from '@nestjs/passport';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiExtraModels,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
+import {
+  ErrorResponseDto,
+  MessageResponseDto,
+} from 'src/common/dto/api-responses.dto';
 import {
   ForgotPasswordDto,
   GetRecoveryPasswordDto,
   GetUserDto,
   ResetPasswordDto,
 } from 'src/modules/user/dto/user.dto';
+
 import {CreateUserDto} from './dto/create-user.dto';
 import {UpdateUserDto} from './dto/update-user.dto';
 import {UpdatePasswordDto} from './dto/updatePassword.dto';
-import {AuthGuard} from '@nestjs/passport';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiExtraModels,
-  ApiResponse,
-  getSchemaPath,
-  ApiTags,
-} from '@nestjs/swagger';
-import {
-  ErrorResponseDto,
-  MessageResponseDto,
-} from 'src/common/dto/api-responses.dto';
+import {UserService} from './user.service';
 
 @ApiTags('User')
 @ApiExtraModels(GetUserDto, ErrorResponseDto, MessageResponseDto)
@@ -59,11 +60,7 @@ export class UserController {
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
   ): Promise<void> {
-    try {
-      await this._userService.forgotPassword(forgotPasswordDto);
-    } catch (error) {
-      throw new Error(error.message);
-    }
+    await this._userService.forgotPassword(forgotPasswordDto);
   }
 
   @Post('reset-password')
@@ -82,11 +79,7 @@ export class UserController {
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<void> {
-    try {
       await this._userService.resetPassword(resetPasswordDto);
-    } catch (error) {
-      throw new Error(error.message);
-    }
   }
 
   @Post()
@@ -98,21 +91,17 @@ export class UserController {
     type: GetUserDto,
   })
   async create(@Body() createUserDto: CreateUserDto): Promise<GetUserDto> {
-    try {
-      createUserDto.name = createUserDto.name.trim();
-      createUserDto.lastName = createUserDto.lastName.trim();
-      createUserDto.email = createUserDto.email.trim();
-      const userDto = await this._userService.create(createUserDto);
-      return {
-        id: userDto._id,
-        name: userDto.name,
-        lastName: userDto.lastName,
-        email: userDto.email,
-        researcher: userDto.researcher,
-      };
-    } catch (error) {
-      throw error;
-    }
+    createUserDto.name = createUserDto.name.trim();
+    createUserDto.lastName = createUserDto.lastName.trim();
+    createUserDto.email = createUserDto.email.trim();
+    const userDto = await this._userService.create(createUserDto);
+    return {
+      id: userDto._id,
+      name: userDto.name,
+      lastName: userDto.lastName,
+      email: userDto.email,
+      researcher: userDto.researcher,
+    };
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -140,7 +129,7 @@ export class UserController {
   ): Promise<
     | GetUserDto[]
     | GetUserDto
-    | {data?: any; error?: string; statusCode?: number}
+    | {data?: unknown; error?: string; statusCode?: number}
   > {
     if (email) {
       try {
@@ -160,20 +149,17 @@ export class UserController {
         }
       }
     }
-    try {
-      const users = await this._userService.findAll();
-      return users.map((user) => {
-        return {
-          id: user._id,
-          name: user.name,
-          lastName: user.lastName,
-          email: user.email,
-          researcher: user.researcher,
-        };
-      });
-    } catch (error) {
-      throw error;
-    }
+    const users = await this._userService.findAll();
+    return users.map((user) => {
+      return {
+        id: user._id,
+        name: user.name,
+        lastName: user.lastName,
+        email: user.email,
+        researcher: user.researcher,
+      };
+    });
+
   }
 
   @UseGuards(AuthGuard('jwt'))

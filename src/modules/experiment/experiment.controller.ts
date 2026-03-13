@@ -8,16 +8,17 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   Patch,
   Post,
   Res,
-  Header,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-
+import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -28,24 +29,26 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ExperimentService } from './experiment.service';
-import { Experiment } from './entity/experiment.entity';
-import { CreateExperimentDto } from './dto/create-experiment.dto';
-import { UpdateExperimentDto } from './dto/update-experiment.dto';
+import { ErrorResponseDto } from 'src/common/dto/api-responses.dto';
 
-import { ExperimentStatsDto } from './dto/experiment-stats.dto';
+import { CreateExperimentDto } from './dto/create-experiment.dto';
 import { ExperimentParticipantDto } from './dto/experiment-participant.dto';
-import { ExperimentTaskExecutionDto } from './dto/experiment-tasks-execution.dto';
-import { ExperimentSurveyStatsDto } from './dto/experiment-surveys-stats.dto';
 import {
   ExperimentGeneralInfoResponseDto,
   ExperimentResponseDto,
   ExperimentStepsResponseDto,
 } from './dto/experiment-response.dto';
-import { ErrorResponseDto } from 'src/common/dto/api-responses.dto';
+import { ExperimentStatsDto } from './dto/experiment-stats.dto';
+import { ExperimentSurveyStatsDto } from './dto/experiment-surveys-stats.dto';
+import { ExperimentTaskExecutionDto } from './dto/experiment-tasks-execution.dto';
+import { UpdateExperimentDto } from './dto/update-experiment.dto';
+import { Experiment } from './entity/experiment.entity';
+import { ExperimentService } from './experiment.service';
+
+type UploadedYamlFile = {
+  buffer: Buffer;
+};
 
 @ApiTags('Experiment')
 @ApiBearerAuth('jwt')
@@ -89,7 +92,7 @@ export class ExperimentController {
   @UseInterceptors(FileInterceptor('file'))
   async importExperiment(
     @Param('ownerId') ownerId: string,
-    @UploadedFile() file: any,
+    @UploadedFile() file: UploadedYamlFile,
   ): Promise<string[]> {
     if (!file) {
       throw new Error('No file uploaded');

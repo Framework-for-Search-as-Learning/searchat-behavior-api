@@ -4,51 +4,58 @@
  */
 
 import { HttpException, Injectable } from '@nestjs/common';
-import axios, { AxiosResponse, CanceledError } from 'axios';
+import axios, { type AxiosRequestConfig,AxiosResponse, CanceledError } from 'axios';
 
 @Injectable()
 export class HttpService {
+  private throwHttpException(error: unknown): never {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new HttpException(error.response.data, error.response.status);
+    }
 
-  async get<T>(url: string, config?: Record<string, any>): Promise<AxiosResponse<T>> {
+    throw new HttpException('Unexpected HTTP error', 500);
+  }
+
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     try {
       return await axios.get<T>(url, config);
     } catch (error) {
-      throw new HttpException(error.response, error.response.status);
+      this.throwHttpException(error);
     }
   }
 
-  async post<T, U>(url: string, data: U, config?: Record<string, any>): Promise<AxiosResponse<T>> {
+  async post<T, U>(url: string, data: U, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     try {
       return await axios.post<T>(url, data, config);
     } catch (error) {
-      throw new HttpException(error.response, error.response.status);
+      this.throwHttpException(error);
     }
   }
 
-  async delete<T>(url: string, config?: Record<string, any>): Promise<AxiosResponse<T>> {
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     try {
       return await axios.delete<T>(url, config);
     } catch (error) {
-      throw new HttpException(error.response, error.response.status);
+      this.throwHttpException(error);
     }
   }
 
-  async patch<T, U>(url: string, data: U, config?: Record<string, any>): Promise<AxiosResponse<T>> {
+  async patch<T, U>(url: string, data: U, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     try {
       return await axios.patch<T>(url, data, config);
     } catch (error) {
-      throw new HttpException(error.response, error.response.status);
+      this.throwHttpException(error);
     }
   }
 
-  async head<T>(url: string, config?: Record<string, any>): Promise<AxiosResponse<T>> {
+  async head<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     try {
       return await axios.head<T>(url, config);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof CanceledError) {
         throw error;
       }
-      throw new HttpException(error.response, error.response.status);
+      this.throwHttpException(error);
     }
   }
 }

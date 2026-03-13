@@ -11,13 +11,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { CreateTaskDto } from './dto/create-task.dto';
+
 import { ExperimentService } from '../experiment/experiment.service';
-import { UpdateTaskDto } from './dto/update-task.dto';
 import { SurveyService } from '../survey/survey.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
-import { Task, TaskProviderConfig } from './entities/task.entity';
 import { PROVIDER_CONFIG_SECRET_KEYS } from './constants/provider-config.constants';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { Task, TaskProviderConfig } from './entities/task.entity';
 import { TaskWithProviderMask } from './types/provider-config.types';
 import {
   buildProviderConfigMask,
@@ -31,6 +32,7 @@ export class TaskService {
     private readonly taskRepository: Repository<Task>,
     @Inject(forwardRef(() => ExperimentService))
     private readonly experimentService: ExperimentService,
+    @Inject(forwardRef(() => SurveyService))
     private readonly surveyService: SurveyService,
     @Inject(forwardRef(() => TaskQuestionMapService))
     private readonly taskQuestionMapService: TaskQuestionMapService,
@@ -214,7 +216,12 @@ export class TaskService {
       }
       return { apiKey: providerConfig.apiKey, cx: providerConfig.cx };
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to load Google credentials',
+        { cause: error },
+      );
     }
   }
 

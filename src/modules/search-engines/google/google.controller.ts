@@ -4,9 +4,10 @@
  */
 
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { GoogleService } from './google.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth } from '@nestjs/swagger';
+
+import { GoogleService } from './google.service';
 
 
 @ApiBearerAuth('jwt')
@@ -25,15 +26,11 @@ export class GoogleController {
   ) {
     query = query.trim();
 
-    try {
-      return await this.googleService.query(
-        query,
-        Number(startIndex),
-        Number(resultsPerPage),
-        taskId,
-      );
-    } catch (error: any) {
-      throw error;
-    }
+    return await this.googleService.query(
+      query,
+      Number(startIndex),
+      Number(resultsPerPage),
+      taskId,
+    );
   }
 }

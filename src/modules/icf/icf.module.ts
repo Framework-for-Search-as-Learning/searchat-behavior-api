@@ -4,11 +4,12 @@
  */
 
 import { forwardRef, Module } from '@nestjs/common';
-import { IcfService } from './icf.service';
-import { IcfController } from './icf.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Icf } from './entity/icf.entity';
+
 import { ExperimentModule } from '../experiment/experiment.module';
+import { Icf } from './entity/icf.entity';
+import { IcfController } from './icf.controller';
+import { IcfService } from './icf.service';
 
 @Module({
   imports: [

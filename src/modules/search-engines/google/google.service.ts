@@ -6,41 +6,10 @@
 import { Injectable } from '@nestjs/common';
 import { QueryResponse, SearchEngineService } from 'src/interfaces/search-engine';
 import { HttpService } from 'src/modules/http/http.service';
-import { GOOGLE } from './google-constants';
-import { SearchResultDto } from '../search-result.dto';
-import { CanceledError } from 'axios';
 import { TaskService } from 'src/modules/task/task.service';
 
-
-const checkXFrameOptions = async (url: string, httpService: HttpService, maxAttemps: number = 2, sleep: number = 100, timeout = 2000) => {
-  let attempt = 0;
-
-  while (attempt < maxAttemps) {
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), timeout);
-    try {
-      const response = await httpService.head(url, { signal: abortController.signal });
-      const xFrameOptions = response.headers['x-frame-options'] as string || null;
-      if (!xFrameOptions) {
-        return true;
-      }
-
-      return !xFrameOptions.toLowerCase().includes('sameorigin')
-        && !xFrameOptions.toLowerCase().includes('deny') && !xFrameOptions.toLowerCase().includes('allow-from');
-    } catch (error: any) {
-      if (error instanceof CanceledError) {
-        return false;
-      }
-
-      await new Promise(resolve => setTimeout(resolve, sleep));
-      attempt++;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  return false;
-}
+import { SearchResultDto } from '../search-result.dto';
+import { GOOGLE } from './google-constants';
 
 const MAX_RESULTS = 100;
 const MAX_START_INDEX = 91;
@@ -58,12 +27,8 @@ export class GoogleService implements SearchEngineService {
     resultsPerPage: number = 10,
     taskId: string,
   ): Promise<QueryResponse> {
-    try {
-      const credentials = await this.taskService.getGoogleCredentials(taskId);
-      return this.queryInternal(query, startIndex, resultsPerPage, credentials);
-    } catch (error) {
-      throw error;
-    }
+    const credentials = await this.taskService.getGoogleCredentials(taskId);
+    return this.queryInternal(query, startIndex, resultsPerPage, credentials);
   }
   private async queryInternal(
     query: string,
@@ -80,7 +45,7 @@ export class GoogleService implements SearchEngineService {
       const items = results.items;
 
       items.forEach((item, index) => {
-        item = Object.assign(item, { rank: index + startIndex });
+        Object.assign(item, { rank: index + startIndex });
       });
 
       const totalResults = Math.min(Number(results?.searchInformation?.totalResults), MAX_RESULTS);
@@ -91,8 +56,11 @@ export class GoogleService implements SearchEngineService {
         googlePagesAccessed: 1
       } as QueryResponse;
     } catch (error) {
-      console.error(error)
-      throw new Error(error.message);
+      console.error(error);
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to query Google',
+        { cause: error },
+      );
     }
   }
 }

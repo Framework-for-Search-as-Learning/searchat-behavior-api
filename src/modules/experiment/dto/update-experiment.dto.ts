@@ -5,6 +5,7 @@
 
 import {ApiProperty, PartialType} from '@nestjs/swagger';
 import {IsEnum, IsOptional} from 'class-validator';
+
 import {ExperimentStatus} from '../entity/experiment.entity';
 import {CreateExperimentDto} from './create-experiment.dto';
 

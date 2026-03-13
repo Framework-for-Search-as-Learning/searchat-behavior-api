@@ -3,8 +3,12 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
+import type { SearchResultItem } from 'src/interfaces/search-engine';
+
 export interface SearchResultDto {
-  items: [Record<any, any>];
-  queries: Record<any, any>;
-  searchInformation: Record<any, any>;
+  items: SearchResultItem[];
+  queries: Record<string, unknown>;
+  searchInformation: Record<string, unknown> & {
+    totalResults?: string | number;
+  };
 }

@@ -3,13 +3,14 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { GoogleController } from './google.controller';
 import { GoogleService } from './google.service';
 
 describe('GoogleController', () => {
   let controller: GoogleController;
-  let service: GoogleService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -25,7 +26,6 @@ describe('GoogleController', () => {
     }).compile();
 
     controller = module.get<GoogleController>(GoogleController);
-    service = module.get<GoogleService>(GoogleService);
   });
 
   it('should be defined', () => {

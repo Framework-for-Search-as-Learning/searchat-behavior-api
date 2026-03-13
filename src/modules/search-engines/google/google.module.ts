@@ -4,10 +4,11 @@
  */
 
 import { Module } from '@nestjs/common';
-import { GoogleController } from './google.controller';
-import { GoogleService } from './google.service';
 import { HttpModule } from 'src/modules/http/http.module';
 import { TaskModule } from 'src/modules/task/task.module';
+
+import { GoogleController } from './google.controller';
+import { GoogleService } from './google.service';
 
 @Module({
   imports: [HttpModule, TaskModule],

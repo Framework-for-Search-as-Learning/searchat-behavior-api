@@ -4,6 +4,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+
 import { UserExperimentStatus } from '../entities/user-experiments.entity';
 
 export class UserExperimentResponseDto {

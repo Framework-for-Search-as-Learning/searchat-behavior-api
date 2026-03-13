@@ -3,13 +3,13 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { LlmSession } from 'src/modules/llm-session/entity/llm-session.entity';
 import { BaseEntity } from 'src/model/base-entity';
 import { Experiment } from 'src/modules/experiment/entity/experiment.entity';
+import { LlmSession } from 'src/modules/llm-session/entity/llm-session.entity';
 import { Survey } from 'src/modules/survey/entity/survey.entity';
 import { TaskQuestionMap } from 'src/modules/task-question-map/entity/taskQuestionMap.entity';
-import { UserTaskSession } from 'src/modules/user-task-session/entities/user-task-session.entity';
 import { UserTask } from 'src/modules/user-task/entities/user-tasks.entity';
+import { UserTaskSession } from 'src/modules/user-task-session/entities/user-task-session.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 export type TaskProviderConfig = {

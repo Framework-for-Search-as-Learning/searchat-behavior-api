@@ -4,6 +4,7 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsNotEmpty,
@@ -12,8 +13,8 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+
 import { AnswerDTO } from './answers.dto';
-import { Type } from 'class-transformer';
 
 export class CreateSurveyAnswerDto {
   @ApiProperty({ description: 'User ID', example: '64d2f4a8e5f9b20b1c8a9f10' })

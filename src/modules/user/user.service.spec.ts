@@ -3,11 +3,13 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UserService } from './user.service';
-import { User } from './entity/user.entity';
 import { MailerService } from '@nestjs-modules/mailer';
+
+import { User } from './entity/user.entity';
+import { UserService } from './user.service';
 
 describe('UserService', () => {
   let service: UserService;

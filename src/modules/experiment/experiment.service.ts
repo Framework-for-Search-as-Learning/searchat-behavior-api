@@ -5,23 +5,93 @@
 
 import {forwardRef, Inject, Injectable} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
-import {Experiment, StepsType} from './entity/experiment.entity';
-import {Repository} from 'typeorm';
-import {CreateExperimentDto} from './dto/create-experiment.dto';
-import {UserExperimentService} from '../user-experiment/user-experiment.service';
-import {UserTaskService} from '../user-task/user-task.service';
-import {UpdateExperimentDto} from './dto/update-experiment.dto';
-import {UserService} from '../user/user.service';
-import {TaskService} from '../task/task.service';
-import {SurveyService} from '../survey/survey.service';
-import {IcfService} from '../icf/icf.service';
 import * as yaml from 'js-yaml';
-import {ExperimentStatsDto} from './dto/experiment-stats.dto';
-import {ExperimentParticipantDto} from './dto/experiment-participant.dto';
-import {ExperimentTaskExecutionDto} from './dto/experiment-tasks-execution.dto';
-import {ExperimentSurveyStatsDto} from './dto/experiment-surveys-stats.dto';
-import { Survey } from '../survey/entity/survey.entity';
+import {Repository} from 'typeorm';
+
+import {IcfService} from '../icf/icf.service';
+import { QuestionDTO, QuestionType } from '../survey/dto/question.dto';
+import { SurveyType } from '../survey/entity/survey.entity';
+import {SurveyService} from '../survey/survey.service';
 import { Task } from '../task/entities/task.entity';
+import {TaskService} from '../task/task.service';
+import {UserService} from '../user/user.service';
+import {UserExperimentService} from '../user-experiment/user-experiment.service';
+import { UserTask } from '../user-task/entities/user-tasks.entity';
+import {UserTaskService} from '../user-task/user-task.service';
+import {CreateExperimentDto} from './dto/create-experiment.dto';
+import {ExperimentParticipantDto} from './dto/experiment-participant.dto';
+import {ExperimentStatsDto} from './dto/experiment-stats.dto';
+import {ExperimentSurveyStatsDto} from './dto/experiment-surveys-stats.dto';
+import {ExperimentTaskExecutionDto} from './dto/experiment-tasks-execution.dto';
+import {UpdateExperimentDto} from './dto/update-experiment.dto';
+import {Experiment, StepsType} from './entity/experiment.entity';
+
+type ExperimentStep = {
+  label: string;
+  order: number;
+};
+
+type YamlQuestion = {
+  id?: string;
+  type?: QuestionType;
+  options?: QuestionDTO['options'];
+  required?: boolean;
+  statement?: string;
+  hasscore?: boolean;
+  otherStatement?: string;
+  helperText?: string;
+  [key: string]: unknown;
+};
+
+type YamlSurvey = {
+  name?: string;
+  title?: string;
+  description?: string;
+  questions?: YamlQuestion[];
+  type?: SurveyType;
+  uniqueAnswer?: boolean;
+  required?: boolean;
+};
+
+type YamlTask = {
+  title?: string;
+  summary?: string;
+  description?: string;
+  rule_type?: string;
+  max_score?: number;
+  min_score?: number;
+  search_source?: string;
+  survey_id?: string | null;
+};
+
+type YamlIcf = {
+  title?: string;
+  description?: string;
+};
+
+type YamlExperimentData = {
+  name?: string;
+  summary?: string;
+  typeExperiment?: string;
+  betweenExperimentType?: string;
+  icf?: YamlIcf | null;
+  surveys?: YamlSurvey[];
+  tasks?: YamlTask[];
+};
+
+type YamlImportDocument = {
+  experiment?: YamlExperimentData;
+};
+
+const DEFAULT_SURVEY_TYPE = SurveyType.DEMO;
+
+const isQuestionType = (value: unknown): value is QuestionType =>
+  typeof value === 'string' &&
+  Object.values(QuestionType).includes(value as QuestionType);
+
+const isSurveyType = (value: unknown): value is SurveyType =>
+  typeof value === 'string' &&
+  Object.values(SurveyType).includes(value as SurveyType);
 
 @Injectable()
 export class ExperimentService {
@@ -39,7 +109,7 @@ export class ExperimentService {
     private readonly icfService: IcfService,
   ) {}
 
-  async create(createExperimentDto: CreateExperimentDto): Promise<any> {
+  async create(createExperimentDto: CreateExperimentDto): Promise<Experiment> {
     const {
       name,
       ownerId,
@@ -130,7 +200,7 @@ export class ExperimentService {
     const userTasks =
       await this.userTaskService.findByExperimentId(experimentId);
 
-    const grouped = new Map<string, {task: any; executions: any[]}>();
+    const grouped = new Map<string, {task: Task; executions: UserTask[]}>();
 
     for (const ut of userTasks) {
       if (!grouped.has(ut.task_id)) {
@@ -184,13 +254,9 @@ export class ExperimentService {
     id: string,
     updateExperimentDto: UpdateExperimentDto,
   ): Promise<Experiment> {
-    try {
       await this.experimentRepository.update({_id: id}, updateExperimentDto);
       const result = await this.find(id);
       return result;
-    } catch (error) {
-      throw new Error(error.message);
-    }
   }
 
   async remove(id: string) {
@@ -199,12 +265,14 @@ export class ExperimentService {
     return experiment;
   }
 
-  async buildStep(experimentId: string): Promise<Record<StepsType, any>> {
+  async buildStep(
+    experimentId: string,
+  ): Promise<Record<StepsType, ExperimentStep | undefined>> {
     const experiment = await this.experimentRepository.findOne({
       where: {_id: experimentId},
       relations: ['tasks', 'surveys', 'icfs'],
     });
-    const step: Record<StepsType, any> = {
+    const step: Record<StepsType, ExperimentStep | undefined> = {
       [StepsType.ICF]: undefined,
       [StepsType.PRE]: undefined,
       [StepsType.POST]: undefined,
@@ -295,7 +363,7 @@ export class ExperimentService {
     ownerId: string,
   ): Promise<string[]> {
     try {
-      const yamlData = yaml.load(yamlContent) as any;
+      const yamlData = yaml.load(yamlContent) as YamlImportDocument;
 
       const validationErrors = this.validateYamlObject(yamlData);
       if (validationErrors.length > 0) {
@@ -328,20 +396,30 @@ export class ExperimentService {
         Array.isArray(yamlData.experiment.surveys)
       ) {
         const surveysPromises = yamlData.experiment.surveys.map((survey) => {
-          const questionsWithIds = (survey.questions || []).map((question) => ({
-            ...question,
-            id: question.id || this.generateUuid(),
-          }));
+          const questionsWithIds: QuestionDTO[] = (survey.questions || []).map(
+            (question) => ({
+              id: question.id || this.generateUuid(),
+              statement: question.statement || '',
+              type: isQuestionType(question.type)
+                ? question.type
+                : QuestionType.OPEN,
+              options: question.options,
+              hasscore: question.hasscore,
+              required: question.required ?? false,
+              otherStatement: question.otherStatement,
+              helperText: question.helperText,
+            }),
+          );
 
           return this.surveyService.create({
             name: survey.name || survey.title,
             title: survey.title,
             description: survey.description,
             questions: questionsWithIds,
-            type: survey.type || 'demo',
+            type: isSurveyType(survey.type) ? survey.type : DEFAULT_SURVEY_TYPE,
             experimentId: savedExperiment._id,
             uuid: this.generateUuid(),
-            uniqueAnswer: survey.uniqueAnswer,
+            uniqueAnswer: survey.uniqueAnswer ?? false,
           });
         });
         await Promise.all(surveysPromises);
@@ -369,9 +447,12 @@ export class ExperimentService {
       }
 
       return [];
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error importing YAML:', error);
-      throw new Error(`Failed to import experiment: ${error.message}`);
+      throw new Error(
+        `Failed to import experiment: ${error instanceof Error ? error.message : 'unknown error'}`,
+        { cause: error },
+      );
     }
   }
 
@@ -386,7 +467,7 @@ export class ExperimentService {
     );
   }
 
-  private validateYamlObject(yaml: any): string[] {
+  private validateYamlObject(yaml: YamlImportDocument): string[] {
     const errors: string[] = [];
 
     if (!yaml.experiment) {
@@ -445,7 +526,7 @@ export class ExperimentService {
     } else if (!Array.isArray(experiment.surveys)) {
       errors.push('yaml_error_invalid_surveys');
     } else {
-      experiment.surveys.forEach((survey: Survey) => {
+      experiment.surveys.forEach((survey) => {
         if (
           !survey.title ||
           typeof survey.title !== 'string' ||

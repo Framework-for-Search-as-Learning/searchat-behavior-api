@@ -3,28 +3,55 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ExperimentService } from './experiment.service';
-import { Experiment, StepsType, ExperimentStatus } from './entity/experiment.entity';
+
+import { IcfService } from '../icf/icf.service';
 import { SurveyType } from '../survey/entity/survey.entity';
+import { SurveyService } from '../survey/survey.service';
+import { TaskService } from '../task/task.service';
+import { UserService } from '../user/user.service';
 import { UserExperimentService } from '../user-experiment/user-experiment.service';
 import { UserTaskService } from '../user-task/user-task.service';
-import { UserService } from '../user/user.service';
-import { TaskService } from '../task/task.service';
-import { SurveyService } from '../survey/survey.service';
-import { IcfService } from '../icf/icf.service';
-import { CreateExperimentDto } from './dto/create-experiment.dto';
+import type { CreateExperimentDto } from './dto/create-experiment.dto';
+import { Experiment, ExperimentStatus,StepsType } from './entity/experiment.entity';
+import { ExperimentService } from './experiment.service';
 
 describe('ExperimentService', () => {
   let service: ExperimentService;
-  let mockExperimentRepository: any;
-  let mockUserExperimentService: any;
-  let mockUserTaskService: any;
-  let mockUserService: any;
-  let mockTaskService: any;
-  let mockSurveyService: any;
-  let mockIcfService: any;
+  let mockExperimentRepository: {
+    find: jest.Mock;
+    findOneBy: jest.Mock;
+    findOne: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+  let mockUserExperimentService: {
+    getDetailedStats: jest.Mock;
+    getParticipantsDetails: jest.Mock;
+    countUsersByExperimentId: jest.Mock;
+  };
+  let mockUserTaskService: {
+    findByExperimentId: jest.Mock;
+    getExecutionDetailsFromEntity: jest.Mock;
+  };
+  let mockUserService: {
+    findOne: jest.Mock;
+  };
+  let mockTaskService: {
+    create: jest.Mock;
+  };
+  let mockSurveyService: {
+    create: jest.Mock;
+    findByExperimentId: jest.Mock;
+    getStats: jest.Mock;
+  };
+  let mockIcfService: {
+    create: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockExperimentRepository = {
@@ -500,4 +527,3 @@ describe('ExperimentService', () => {
     });
   });
 });
-

@@ -4,39 +4,40 @@
  */
 
 import {Module} from '@nestjs/common';
-import {AppController} from './app.controller';
-import {AuthModule} from './modules/auth/auth.module';
-import {HttpModule} from './modules/http/http.module';
-import {GoogleModule} from './modules/search-engines/google/google.module';
-import {MailerModule} from '@nestjs-modules/mailer';
 import {ConfigModule} from '@nestjs/config';
 import {ConfigService} from '@nestjs/config';
 import {TypeOrmModule} from '@nestjs/typeorm';
-import {UserModule} from './modules/user/user.module';
-import {User} from './modules/user/entity/user.entity';
-import {ExperimentModule} from './modules/experiment/experiment.module';
-import {Experiment} from './modules/experiment/entity/experiment.entity';
-import {TaskModule} from './modules/task/task.module';
-import {UserExperimentModule} from './modules/user-experiment/user-experiment.module';
-import {UserExperiment} from './modules/user-experiment/entities/user-experiments.entity';
-import {UserTaskModule} from './modules/user-task/user-task.module';
-import {UserTask} from './modules/user-task/entities/user-tasks.entity';
-import {SurveyModule} from './modules/survey/survey.module';
-import {Survey} from './modules/survey/entity/survey.entity';
-import {SurveyAnswerModule} from './modules/survey-answer/survey-answer.module';
-import {SurveyAnswer} from './modules/survey-answer/entity/survey-answer.entity';
-import {TaskQuestionMapModule} from './modules/task-question-map/task-question-map.module';
-import {TaskQuestionMap} from './modules/task-question-map/entity/taskQuestionMap.entity';
-import {IcfModule} from './modules/icf/icf.module';
-import {Icf} from './modules/icf/entity/icf.entity';
-import {UserTaskSessionModule} from './modules/user-task-session/user-task-session.module';
-import {UserTaskSession} from './modules/user-task-session/entities/user-task-session.entity';
-import {Page} from './modules/user-task-session/entities/page.entity';
-import {LlmSessionModule} from './modules/llm-session/llm-session.module';
-import {LlmSession} from './modules/llm-session/entity/llm-session.entity';
-import {LlmMessage} from './modules/llm-session/entity/llm-message.entity';
-import {Task} from './modules/task/entities/task.entity';
+import {MailerModule} from '@nestjs-modules/mailer';
 import * as Joi from 'joi';
+
+import {AppController} from './app.controller';
+import {AuthModule} from './modules/auth/auth.module';
+import {Experiment} from './modules/experiment/entity/experiment.entity';
+import {ExperimentModule} from './modules/experiment/experiment.module';
+import {HttpModule} from './modules/http/http.module';
+import {Icf} from './modules/icf/entity/icf.entity';
+import {IcfModule} from './modules/icf/icf.module';
+import {LlmMessage} from './modules/llm-session/entity/llm-message.entity';
+import {LlmSession} from './modules/llm-session/entity/llm-session.entity';
+import {LlmSessionModule} from './modules/llm-session/llm-session.module';
+import {GoogleModule} from './modules/search-engines/google/google.module';
+import {Survey} from './modules/survey/entity/survey.entity';
+import {SurveyModule} from './modules/survey/survey.module';
+import {SurveyAnswer} from './modules/survey-answer/entity/survey-answer.entity';
+import {SurveyAnswerModule} from './modules/survey-answer/survey-answer.module';
+import {Task} from './modules/task/entities/task.entity';
+import {TaskModule} from './modules/task/task.module';
+import {TaskQuestionMap} from './modules/task-question-map/entity/taskQuestionMap.entity';
+import {TaskQuestionMapModule} from './modules/task-question-map/task-question-map.module';
+import {User} from './modules/user/entity/user.entity';
+import {UserModule} from './modules/user/user.module';
+import {UserExperiment} from './modules/user-experiment/entities/user-experiments.entity';
+import {UserExperimentModule} from './modules/user-experiment/user-experiment.module';
+import {UserTask} from './modules/user-task/entities/user-tasks.entity';
+import {UserTaskModule} from './modules/user-task/user-task.module';
+import {Page} from './modules/user-task-session/entities/page.entity';
+import {UserTaskSession} from './modules/user-task-session/entities/user-task-session.entity';
+import {UserTaskSessionModule} from './modules/user-task-session/user-task-session.module';
 @Module({
   imports: [
     ConfigModule.forRoot({

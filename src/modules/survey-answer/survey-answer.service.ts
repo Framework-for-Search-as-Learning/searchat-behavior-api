@@ -5,15 +5,16 @@
 
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SurveyAnswer } from './entity/survey-answer.entity';
 import { Repository } from 'typeorm';
-import { CreateSurveyAnswerDto } from './dto/create-surveyAnswer.dto';
-import { UserService } from '../user/user.service';
-import { SurveyService } from '../survey/survey.service';
-import { UpdateSurveyAnswerDto } from './dto/update-surveyAnswer.dto';
+
 import { QuestionType } from '../survey/dto/question.dto';
+import { SurveyService } from '../survey/survey.service';
+import { UserService } from '../user/user.service';
 import { UserTaskService } from '../user-task/user-task.service';
 import { AnswerDTO } from './dto/answers.dto';
+import { CreateSurveyAnswerDto } from './dto/create-surveyAnswer.dto';
+import { UpdateSurveyAnswerDto } from './dto/update-surveyAnswer.dto';
+import { SurveyAnswer } from './entity/survey-answer.entity';
 
 @Injectable()
 export class SurveyAnswerService {
@@ -29,36 +30,32 @@ export class SurveyAnswerService {
   async create(
     createSurveyAnswerDto: CreateSurveyAnswerDto,
   ): Promise<SurveyAnswer> {
-    try {
-      const { userId, surveyId, answers } = createSurveyAnswerDto;
-      const user = await this.userService.findOne(userId);
-      if (!user) {
-        throw new NotFoundException('Usuario não encontrado.');
-      }
-      const survey = await this.surveyService.findOneWithExperiment(surveyId);
-      if (!survey) {
-        throw new NotFoundException('Survey não encontrado.');
-      }
-
-      const totalScore = this.calculateScore(answers);
-      const newSurveyAnswer = await this.surveyAnswerRepository.save({
-        user: user,
-        survey: survey,
-        answers: answers,
-        score: totalScore,
-      });
-      const experiment = survey.experiment;
-      if (experiment?.betweenExperimentType === 'rules_based') {
-        await this.userTaskService.createBySurveyRule({
-          userId,
-          surveyId: newSurveyAnswer.survey_id,
-          surveyAnswer: newSurveyAnswer,
-        });
-      }
-      return newSurveyAnswer;
-    } catch (error) {
-      throw error;
+    const { userId, surveyId, answers } = createSurveyAnswerDto;
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario não encontrado.');
     }
+    const survey = await this.surveyService.findOneWithExperiment(surveyId);
+    if (!survey) {
+      throw new NotFoundException('Survey não encontrado.');
+    }
+
+    const totalScore = this.calculateScore(answers);
+    const newSurveyAnswer = await this.surveyAnswerRepository.save({
+      user: user,
+      survey: survey,
+      answers: answers,
+      score: totalScore,
+    });
+    const experiment = survey.experiment;
+    if (experiment?.betweenExperimentType === 'rules_based') {
+      await this.userTaskService.createBySurveyRule({
+        userId,
+        surveyId: newSurveyAnswer.survey_id,
+        surveyAnswer: newSurveyAnswer,
+      });
+    }
+    return newSurveyAnswer;
   }
 
   async findAll(): Promise<SurveyAnswer[]> {

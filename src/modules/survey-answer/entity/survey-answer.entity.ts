@@ -7,6 +7,7 @@ import { BaseEntity } from 'src/model/base-entity';
 import { Survey } from 'src/modules/survey/entity/survey.entity';
 import { User } from 'src/modules/user/entity/user.entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
+
 import { AnswerDTO } from '../dto/answers.dto';
 
 @Entity()

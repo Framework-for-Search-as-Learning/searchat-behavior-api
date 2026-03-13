@@ -4,10 +4,11 @@
  */
 
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { BingService } from './bing.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { SearchQueryResponseDto } from '../search-query-response.dto';
+import { BingService } from './bing.service';
 
 @ApiTags('Search Engine')
 @ApiBearerAuth('jwt')
@@ -15,7 +16,7 @@ import { SearchQueryResponseDto } from '../search-query-response.dto';
 @Controller('search-engine')
 export class BingController {
 
-  private cache: Record<string, any> = {};
+  private cache: Record<string, unknown> = {};
 
   constructor(private readonly bingService: BingService) { }
 
@@ -27,15 +28,13 @@ export class BingController {
   @ApiResponse({ status: 200, description: 'Search results from Bing.', type: SearchQueryResponseDto })
   async query(
     @Query('query') query: string,
+    @Query('taskId') taskId: string,
     @Query('start') startIndex: number = 0,
     @Query('num') resultsPerPage: number = 10,
   ) {
     query = query.trim();
 
-    try {
-      return await this.bingService.query(query, Number(startIndex), Number(resultsPerPage));
-    } catch (error: any) {
-      throw error;
-    }
+    return await this.bingService.query(query, Number(startIndex), Number(resultsPerPage), taskId);
+
   }
 }

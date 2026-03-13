@@ -5,23 +5,24 @@
 
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserTask } from './entities/user-tasks.entity';
+import { LlmSessionService } from 'src/modules/llm-session/llm-session.service';
 import { In, Repository } from 'typeorm';
-import { CreateUserTaskDto } from './dto/create-userTask.dto';
-import { UserService } from '../user/user.service';
+
+import { Task } from '../task/entities/task.entity';
 import { TaskService } from '../task/task.service';
-import { UpdateUserTaskDto } from './dto/update-userTask.dto';
-import { TimeEditUserTaskDto } from './dto/timeEditUserTaskDTO';
-import { CreateUserTaskRandomDto } from './dto/create-userTaskRandom.dto';
-import { CreateUserTaskScoreDto } from './dto/create-userTaskScore.dto';
-import { CreateUserTaskAvgQuestScoreDto } from './dto/create-userTaskAvgQuestScore.dto';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
 import { User } from '../user/entity/user.entity';
-import { CreateUserTaskByRule } from './dto/create-userTaskByRule.dto';
-import { Task } from '../task/entities/task.entity';
+import { UserService } from '../user/user.service';
 import { UserTaskSessionService } from '../user-task-session/user-task-session.service';
-import { LlmSessionService } from 'src/modules/llm-session/llm-session.service';
+import { CreateUserTaskDto } from './dto/create-userTask.dto';
+import { CreateUserTaskAvgQuestScoreDto } from './dto/create-userTaskAvgQuestScore.dto';
+import { CreateUserTaskByRule } from './dto/create-userTaskByRule.dto';
+import { CreateUserTaskRandomDto } from './dto/create-userTaskRandom.dto';
+import { CreateUserTaskScoreDto } from './dto/create-userTaskScore.dto';
 import { TaskExecutionDetailsDto } from './dto/task-execution-details.dto';
+import { TimeEditUserTaskDto } from './dto/timeEditUserTaskDTO';
+import { UpdateUserTaskDto } from './dto/update-userTask.dto';
+import { UserTask } from './entities/user-tasks.entity';
 
 @Injectable()
 export class UserTaskService {
@@ -203,12 +204,8 @@ export class UserTaskService {
   }
 
   async createMany(userTasks: UserTask[]): Promise<UserTask[]> {
-    try {
-      const savedUserTasks = await this.userTaskRepository.save(userTasks);
-      return savedUserTasks;
-    } catch (error) {
-      throw error;
-    }
+    const savedUserTasks = await this.userTaskRepository.save(userTasks);
+    return savedUserTasks;
   }
 
   async findAll(): Promise<UserTask[]> {
@@ -327,11 +324,10 @@ export class UserTaskService {
 
   async start(
     id: string,
-    timeEditUserTaskDTO: TimeEditUserTaskDto,
+    _timeEditUserTaskDTO: TimeEditUserTaskDto,
   ): Promise<UserTask> {
-    let { isPaused, startTime } = timeEditUserTaskDTO;
-    isPaused = false;
-    startTime = new Date();
+    const isPaused = false;
+    const startTime = new Date();
     await this.update(id, { isPaused, startTime });
     return await this.userTaskRepository.findOne({ where: { _id: id } });
   }
@@ -340,8 +336,8 @@ export class UserTaskService {
     id: string,
     timeEditUserTaskDto: TimeEditUserTaskDto,
   ): Promise<UserTask> {
-    let { isPaused, pauseTime } = timeEditUserTaskDto;
-    isPaused = true;
+    let { pauseTime } = timeEditUserTaskDto;
+    const isPaused = true;
     if (!pauseTime) {
       pauseTime = [];
     }
@@ -353,8 +349,8 @@ export class UserTaskService {
     id: string,
     timeEditUserTaskDTO: TimeEditUserTaskDto,
   ): Promise<UserTask> {
-    let { isPaused, resumeTime } = timeEditUserTaskDTO;
-    isPaused = false;
+    let { resumeTime } = timeEditUserTaskDTO;
+    const isPaused = false;
     if (!resumeTime) {
       resumeTime = [];
     }
@@ -366,9 +362,9 @@ export class UserTaskService {
     id: string,
     timeEditUserTaskDTO: TimeEditUserTaskDto,
   ): Promise<UserTask> {
-    let { hasFinishedTask, endTime, metadata } = timeEditUserTaskDTO;
-    hasFinishedTask = true;
-    endTime = new Date();
+    const { metadata } = timeEditUserTaskDTO;
+    const endTime = new Date();
+    const hasFinishedTask = true;
     await this.update(id, { hasFinishedTask, endTime, metadata });
     return await this.userTaskRepository.findOne({ where: { _id: id } });
   }

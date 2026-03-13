@@ -4,13 +4,17 @@
  */
 
 import { HttpException, Injectable } from '@nestjs/common';
-import { QueryResponse, SearchEngineService } from 'src/interfaces/search-engine';
-import { HttpService } from 'src/modules/http/http.service';
-import { BING } from './bing-constants';
-import pLimit from 'p-limit';
 import { CanceledError } from 'axios';
-import { SearchResultDto } from '../search-result.dto';
+import pLimit from 'p-limit';
+import { QueryResponse, SearchEngineService, SearchResultItem } from 'src/interfaces/search-engine';
+import { HttpService } from 'src/modules/http/http.service';
 
+import { SearchResultDto } from '../search-result.dto';
+import { BING } from './bing-constants';
+
+type HttpErrorResponse = {
+  headers?: Record<string, string>;
+};
 
 const checkXFrameOptions = async (url: string, httpService: HttpService, maxAttemps: number = 3, sleep: number = 100, timeout = 3000) => {
   let attempt = 0;
@@ -27,10 +31,14 @@ const checkXFrameOptions = async (url: string, httpService: HttpService, maxAtte
 
       return !xFrameOptions.toLowerCase().includes('sameorigin')
         && !xFrameOptions.toLowerCase().includes('deny');
-    } catch (error: any) {
-      console.error(`Error checking X-Frame-Options for ${url}:`, error.message);
+    } catch (error: unknown) {
+      console.error(
+        `Error checking X-Frame-Options for ${url}:`,
+        error instanceof Error ? error.message : error,
+      );
       if (error instanceof HttpException && error.getStatus() >= 400) {
-        const xFrameOptions = error.getResponse()['headers']['x-frame-options'] as string || null;
+        const response = error.getResponse() as HttpErrorResponse;
+        const xFrameOptions = response.headers?.['x-frame-options'] || null;
         if (!xFrameOptions) {
           return true;
         }
@@ -64,13 +72,15 @@ export class BingService implements SearchEngineService {
     private readonly httpService: HttpService,
   ) { }
 
+   
   async query(
     query: string,
     startIndex: number = 1,
     resultsPerPage: number = 10,
-    _experimentId: string = '',
+    _taskId = '',
   ): Promise<QueryResponse> {
-    
+    // parameter present for interface compatibility; mark as used so linter stops complaining
+    void _taskId;
 
     return this.queryInternal(query, startIndex, resultsPerPage, []);
   }
@@ -78,7 +88,7 @@ export class BingService implements SearchEngineService {
     query: string,
     startIndex: number = 1,
     resultsPerPage: number = 10,
-    internalResults: Array<any> = []
+    internalResults: SearchResultItem[] = []
   ): Promise<QueryResponse> {
 
     try {

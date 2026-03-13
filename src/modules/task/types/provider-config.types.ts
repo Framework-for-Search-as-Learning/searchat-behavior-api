@@ -3,7 +3,7 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Task } from '../entities/task.entity';
+import type { Task } from '../entities/task.entity';
 
 export type ProviderConfigMasked = {
   hasSecrets: boolean;

@@ -4,10 +4,6 @@
  */
 
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { UserTaskSessionService } from './user-task-session.service';
-import { UserTaskSession } from './entities/user-task-session.entity';
-import { CreateUserTaskSessionDto } from './dto/create-userTaskSession.dto';
-import { HandlePageDto } from './dto/handlePage.dto';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -18,8 +14,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserTaskSessionResponseDto } from './dto/user-task-session-response.dto';
 import { ErrorResponseDto } from 'src/common/dto/api-responses.dto';
+
+import { CreateUserTaskSessionDto } from './dto/create-userTaskSession.dto';
+import { HandlePageDto } from './dto/handlePage.dto';
+import { UserTaskSessionResponseDto } from './dto/user-task-session-response.dto';
+import { UserTaskSession } from './entities/user-task-session.entity';
+import { UserTaskSessionService } from './user-task-session.service';
 
 @ApiTags('User Task Session')
 @ApiBearerAuth('jwt')

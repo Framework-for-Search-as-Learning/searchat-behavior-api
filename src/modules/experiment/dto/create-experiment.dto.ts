@@ -3,10 +3,11 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { TaskProps } from '../entity/experiment.entity';
-import { CreateSurveyDto } from 'src/modules/survey/dto/create-survey.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { CreateSurveyDto } from 'src/modules/survey/dto/create-survey.dto';
+
+import { TaskProps } from '../entity/experiment.entity';
 
 export class CreateExperimentDto {
   @ApiProperty({ description: 'Experiment name', example: 'Bias Study A' })

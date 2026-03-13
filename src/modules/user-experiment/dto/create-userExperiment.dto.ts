@@ -7,6 +7,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 import { StepsType } from 'src/modules/experiment/entity/experiment.entity';
+
 import { UserExperimentStatus } from '../entities/user-experiments.entity';
 
 export class CreateUserExperimentDto {

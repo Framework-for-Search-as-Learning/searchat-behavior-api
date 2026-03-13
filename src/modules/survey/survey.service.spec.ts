@@ -3,12 +3,14 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { SurveyService } from './survey.service';
-import { Survey } from './entity/survey.entity';
+
 import { ExperimentService } from '../experiment/experiment.service';
 import { SurveyAnswerService } from '../survey-answer/survey-answer.service';
+import { Survey } from './entity/survey.entity';
+import { SurveyService } from './survey.service';
 
 describe('SurveyService', () => {
   let service: SurveyService;

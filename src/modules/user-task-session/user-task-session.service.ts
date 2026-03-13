@@ -5,11 +5,12 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserTaskSession } from './entities/user-task-session.entity';
 import { Repository } from 'typeorm';
+
 import { CreateUserTaskSessionDto } from './dto/create-userTaskSession.dto';
 import { HandlePageDto } from './dto/handlePage.dto';
 import { Page } from './entities/page.entity';
+import { UserTaskSession } from './entities/user-task-session.entity';
 
 @Injectable()
 export class UserTaskSessionService {
@@ -65,31 +66,26 @@ export class UserTaskSessionService {
     rank: number,
     openPageDto: HandlePageDto,
   ): Promise<UserTaskSession> {
-    try {
-      const userTaskSession = await this.userTaskSessionRepository.findOne({
-        where: { _id: id },
-        relations: ['pages'],
-      });
-      if (!userTaskSession) {
-        throw new NotFoundException('Session not found');
-      }
-     
-
-      const page = this.pageRepository.create({
-        title: openPageDto.title,
-        url: openPageDto.url,
-        startTime: new Date(),
-        rank: rank,
-        session: userTaskSession,
-      });
-      await this.pageRepository.save(page);
-      return await this.userTaskSessionRepository.findOne({
-        where: { _id: id },
-        relations: ['pages'],
-      });
-    } catch (error) {
-      throw new Error(error.message);
+    const userTaskSession = await this.userTaskSessionRepository.findOne({
+      where: { _id: id },
+      relations: ['pages'],
+    });
+    if (!userTaskSession) {
+      throw new NotFoundException('Session not found');
     }
+
+    const page = this.pageRepository.create({
+      title: openPageDto.title,
+      url: openPageDto.url,
+      startTime: new Date(),
+      rank: rank,
+      session: userTaskSession,
+    });
+    await this.pageRepository.save(page);
+    return await this.userTaskSessionRepository.findOne({
+      where: { _id: id },
+      relations: ['pages'],
+    });
   }
 
   async closePage(
@@ -130,7 +126,7 @@ export class UserTaskSessionService {
         `Error closing modal ${rank}: ${closePageDto.title}: ${closePageDto.url
         } ${new Date()}`,
       );
-      throw new Error(error.message);
+      throw new Error(error.message, {cause: error});
     }
   }
 }

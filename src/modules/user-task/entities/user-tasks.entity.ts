@@ -31,5 +31,5 @@ export class UserTask extends BaseEntity {
   @Column({ default: null })
   endTime: Date = null;
   @Column('json', { nullable: true, default: null })
-  metadata: any = null;
+  metadata: Record<string, unknown> | null = null;
 }

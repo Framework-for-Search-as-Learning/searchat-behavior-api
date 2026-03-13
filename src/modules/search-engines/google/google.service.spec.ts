@@ -3,10 +3,12 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
-import { GoogleService } from './google.service';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { HttpService } from '../../http/http.service';
 import { TaskService } from '../../task/task.service';
+import { GoogleService } from './google.service';
 
 describe('GoogleService', () => {
   let service: GoogleService;

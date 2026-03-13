@@ -24,18 +24,19 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserTaskService } from './user-task.service';
-import { UserTask } from './entities/user-tasks.entity';
-import { CreateUserTaskDto } from './dto/create-userTask.dto';
-import { UpdateUserTaskDto } from './dto/update-userTask.dto';
-import { User } from '../user/entity/user.entity';
-import { Task } from '../task/entities/task.entity';
-import { TimeEditUserTaskDto } from './dto/timeEditUserTaskDTO';
-import { TaskExecutionDetailsDto } from './dto/task-execution-details.dto';
-import { UserTaskResponseDto } from './dto/user-task-response.dto';
-import { GetUserDto } from '../user/dto/user.dto';
-import { TaskResponseDto } from '../task/dto/task-response.dto';
 import { ErrorResponseDto } from 'src/common/dto/api-responses.dto';
+
+import { TaskResponseDto } from '../task/dto/task-response.dto';
+import { Task } from '../task/entities/task.entity';
+import { GetUserDto } from '../user/dto/user.dto';
+import { User } from '../user/entity/user.entity';
+import { CreateUserTaskDto } from './dto/create-userTask.dto';
+import { TaskExecutionDetailsDto } from './dto/task-execution-details.dto';
+import { TimeEditUserTaskDto } from './dto/timeEditUserTaskDTO';
+import { UpdateUserTaskDto } from './dto/update-userTask.dto';
+import { UserTaskResponseDto } from './dto/user-task-response.dto';
+import { UserTask } from './entities/user-tasks.entity';
+import { UserTaskService } from './user-task.service';
 
 @ApiTags('User Task')
 @ApiBearerAuth('jwt')

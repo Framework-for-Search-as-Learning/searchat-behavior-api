@@ -4,11 +4,12 @@
  */
 
 import { forwardRef, Module } from '@nestjs/common';
-import { TaskQuestionMapService } from './task-question-map.service';
-import { TaskQuestionMapController } from './task-question-map.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { TaskQuestionMap } from './entity/taskQuestionMap.entity';
+
 import { TaskModule } from '../task/task.module';
+import { TaskQuestionMap } from './entity/taskQuestionMap.entity';
+import { TaskQuestionMapController } from './task-question-map.controller';
+import { TaskQuestionMapService } from './task-question-map.service';
 
 @Module({
   imports: [

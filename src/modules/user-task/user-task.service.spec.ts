@@ -3,15 +3,17 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { UserTaskService } from './user-task.service';
-import { UserTask } from './entities/user-tasks.entity';
-import { UserService } from '../user/user.service';
+
+import { LlmSessionService } from '../llm-session/llm-session.service';
 import { TaskService } from '../task/task.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
+import { UserService } from '../user/user.service';
 import { UserTaskSessionService } from '../user-task-session/user-task-session.service';
-import { LlmSessionService } from '../llm-session/llm-session.service';
+import { UserTask } from './entities/user-tasks.entity';
+import { UserTaskService } from './user-task.service';
 
 describe('UserTaskService', () => {
   let service: UserTaskService;

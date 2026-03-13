@@ -5,7 +5,7 @@
 A standardized framework for capturing authentic human behavior in search and AI-chat experiments.
 </p>
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-004b8d" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.0-004b8d" alt="Version">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-2fb594" alt="License"></a>
   <img src="https://img.shields.io/badge/Research-Tool-orange" alt="Tool">
 </p>
@@ -21,7 +21,7 @@ configurations and experimental data.
 
 > **⚠️ Note:** If you want to run the full stack (Frontend + Backend +
 > Database) together, please refer to the [Searchat Behavior Parent
-> Repository](https://github.com/Framework-for-Search-as-Learning/searchat-behavior).
+> Repository](https://github.com/lapic-ufjf/searchat-behavior).
 > The instructions below are strictly for running the backend
 > **independently** for isolated development or testing.
 
@@ -51,7 +51,7 @@ need:
 ## 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/Framework-for-Search-as-Learning/searchat-behavior-api.git
+git clone https://github.com/lapic-ufjf/searchat-behavior-api.git
 cd searchat-behavior-api
 ```
 
@@ -136,8 +136,8 @@ pnpm start:dev
 
 ## 4️⃣ Accessing the Services
 
-- Backend API: http://localhost:3000/searchat-behavior\
-- PostgreSQL: localhost:5432\
+- Backend API: http://localhost:3000/api
+- PostgreSQL: localhost:5432
 
 ---
 

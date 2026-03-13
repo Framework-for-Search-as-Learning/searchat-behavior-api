@@ -4,12 +4,13 @@
  */
 
 import { forwardRef, Module } from '@nestjs/common';
-import { SurveyController } from './survey.controller';
-import { SurveyService } from './survey.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Survey } from './entity/survey.entity';
+
 import { ExperimentModule } from '../experiment/experiment.module';
 import { SurveyAnswerModule } from '../survey-answer/survey-answer.module';
+import { Survey } from './entity/survey.entity';
+import { SurveyController } from './survey.controller';
+import { SurveyService } from './survey.service';
 
 @Module({
   imports: [

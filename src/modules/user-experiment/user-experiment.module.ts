@@ -4,14 +4,15 @@
  */
 
 import { forwardRef, Module } from '@nestjs/common';
-import { UserExperimentService } from './user-experiment.service';
-import { UserExperimentController } from './user-experiment.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserExperiment } from './entities/user-experiments.entity';
-import { UserModule } from '../user/user.module';
+
 import { ExperimentModule } from '../experiment/experiment.module';
-import { UserTaskModule } from '../user-task/user-task.module';
 import { TaskModule } from '../task/task.module';
+import { UserModule } from '../user/user.module';
+import { UserTaskModule } from '../user-task/user-task.module';
+import { UserExperiment } from './entities/user-experiments.entity';
+import { UserExperimentController } from './user-experiment.controller';
+import { UserExperimentService } from './user-experiment.service';
 
 @Module({
   imports: [

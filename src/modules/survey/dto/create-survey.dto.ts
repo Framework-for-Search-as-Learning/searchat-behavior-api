@@ -3,6 +3,8 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
+import {ApiProperty} from '@nestjs/swagger';
+import {Type} from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -12,9 +14,8 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+
 import {SurveyType} from '../entity/survey.entity';
-import {Type} from 'class-transformer';
-import {ApiProperty} from '@nestjs/swagger';
 import {QuestionDTO} from './question.dto';
 
 export class CreateSurveyDto {

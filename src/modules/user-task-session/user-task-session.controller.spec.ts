@@ -3,7 +3,9 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { UserTaskSessionController } from './user-task-session.controller';
 import { UserTaskSessionService } from './user-task-session.service';
 

@@ -3,11 +3,14 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import {NestFactory} from '@nestjs/core';
-import {AppModule} from './app.module';
+import 'reflect-metadata';
+
 import {ValidationPipe} from '@nestjs/common';
-import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 import {ConfigService} from '@nestjs/config';
+import {NestFactory} from '@nestjs/core';
+import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
+
+import {AppModule} from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {cors: true});
@@ -15,7 +18,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Searchat Behavior')
     .setDescription('The Searchat Behavior API documentation')
-    .setVersion('1.0')
+    .setVersion('0.1.0')
     .addTag('SearchatBehavior')
     .addBearerAuth({type: 'http', scheme: 'bearer', bearerFormat: 'JWT'}, 'jwt')
     .build();
