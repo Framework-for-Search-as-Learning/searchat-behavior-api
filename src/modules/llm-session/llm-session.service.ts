@@ -63,6 +63,7 @@ export class LlmSessionService {
             apiKey: true,
             modelProvider: true,
             model: true,
+            systemPrompt: true,
           },
         },
       },
@@ -98,7 +99,17 @@ export class LlmSessionService {
 
     const modelName = providerConfig.model || 'gemini-2.5-flash';
     const genAI = new GoogleGenerativeAI(providerConfig.apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const modelConfig: any = {
+      model: modelName,
+    };
+
+    if (providerConfig.systemInstruction) {
+      modelConfig.systemInstruction = {
+        parts: [{ text: providerConfig.systemInstruction }],
+      };
+    }
+
+    const model = genAI.getGenerativeModel(modelConfig);
     const chat = model.startChat({ history: historyForAi });
 
     try {

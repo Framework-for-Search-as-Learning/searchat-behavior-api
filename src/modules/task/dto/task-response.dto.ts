@@ -36,7 +36,7 @@ export class TaskResponseDto {
   @ApiProperty({ description: 'Maximum score to qualify', example: 25, required: false })
   max_score?: number;
 
-  @ApiProperty({ description: 'Provider configuration returned by API', example: {"model":"gemini-2.5-flash","apiKey":"asda-----sdsadd","modelProvider":"google"}, required: false })
+  @ApiProperty({ description: 'Provider configuration returned by API', example: {"model":"gemini-2.5-flash","apiKey":"asda-----sdsadd","modelProvider":"google","systemInstruction":"You are a friendly and helpful assistant."}, required: false })
   provider_config?: Record<string, unknown>;
 
   @ApiProperty({ description: 'Whether secret fields in provider config were masked', example: true, required: false })

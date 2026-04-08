@@ -18,6 +18,7 @@ export type TaskProviderConfig = {
   model?: string;
   apiKey?: string;
   cx?: string;
+  systemInstruction?: string;
   [key: string]: unknown;
 };
 
