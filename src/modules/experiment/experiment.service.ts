@@ -221,6 +221,11 @@ export class ExperimentService {
       result.push({
         taskId: taskId,
         taskTitle: data.task.title,
+        taskType: data.task.search_source,
+        systemInstruction:
+          data.task.search_source === 'llm'
+            ? data.task.provider_config?.systemInstruction ?? null
+            : null,
         executions: executionsDetails,
       });
     }

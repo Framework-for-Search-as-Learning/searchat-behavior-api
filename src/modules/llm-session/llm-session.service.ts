@@ -17,6 +17,11 @@ import { Repository } from 'typeorm';
 import { LlmMessage } from './entity/llm-message.entity';
 import { LlmSession } from './entity/llm-session.entity';
 
+type GoogleModelConfig = {
+  model: string;
+  systemInstruction?: string;
+};
+
 @Injectable()
 export class LlmSessionService {
   constructor(
@@ -38,7 +43,11 @@ export class LlmSessionService {
       return existingSession;
     }
 
-    const task = await this.taskRepository.findOne({ where: { _id: taskId } });
+    const task = await this.taskRepository
+      .createQueryBuilder('task')
+      .addSelect('task.provider_config')
+      .where('task._id = :taskId', { taskId })
+      .getOne();
     if (!task) {
       throw new NotFoundException('Task not found');
     }
@@ -46,28 +55,20 @@ export class LlmSessionService {
     const newSession = this.llmSessionRepository.create({
       user: { _id: userId } as User,
       task: task,
+      systemInstruction: task.provider_config?.systemInstruction ?? null,
     });
 
     return await this.llmSessionRepository.save(newSession);
   }
 
   async processChatMessage(sessionId: string, userId: string, content: string) {
-    const session = await this.llmSessionRepository.findOne({
-      where: { id: sessionId },
-      relations: ['task', 'user'],
-      select: {
-        id: true,
-        task: {
-          _id: true,
-          provider_config: {
-            apiKey: true,
-            modelProvider: true,
-            model: true,
-            systemPrompt: true,
-          },
-        },
-      },
-    });
+    const session = await this.llmSessionRepository
+      .createQueryBuilder('session')
+      .leftJoinAndSelect('session.task', 'task')
+      .leftJoinAndSelect('session.user', 'user')
+      .addSelect('task.provider_config')
+      .where('session.id = :sessionId', { sessionId })
+      .getOne();
     if (!session) throw new NotFoundException('Session not found');
     if (session.user._id !== userId)
       throw new ForbiddenException('Session does not belong to user');
@@ -99,14 +100,12 @@ export class LlmSessionService {
 
     const modelName = providerConfig.model || 'gemini-2.5-flash';
     const genAI = new GoogleGenerativeAI(providerConfig.apiKey);
-    const modelConfig: any = {
+    const modelConfig: GoogleModelConfig = {
       model: modelName,
     };
 
     if (providerConfig.systemInstruction) {
-      modelConfig.systemInstruction = {
-        parts: [{ text: providerConfig.systemInstruction }],
-      };
+      modelConfig.systemInstruction = providerConfig.systemInstruction;
     }
 
     const model = genAI.getGenerativeModel(modelConfig);

@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LlmSessionService } from 'src/modules/llm-session/llm-session.service';
 import { In, Repository } from 'typeorm';
 
-import { Task } from '../task/entities/task.entity';
+import { Task, type TaskProviderConfig } from '../task/entities/task.entity';
 import { TaskService } from '../task/task.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
 import { User } from '../user/entity/user.entity';
@@ -384,11 +384,26 @@ export class UserTaskService {
     return tasks.length;
   }
 
+  private getSystemInstruction(
+    sessionSystemInstruction: string | null | undefined,
+    task: Task,
+  ): string | null {
+    return (
+      sessionSystemInstruction ??
+      (task.provider_config as TaskProviderConfig | undefined)
+        ?.systemInstruction ??
+      null
+    );
+  }
+
   async getExecutionDetails(userTaskId: string): Promise<TaskExecutionDetailsDto> {
-    const userTask = await this.userTaskRepository.findOne({
-      where: { _id: userTaskId },
-      relations: ['task', 'user']
-    });
+    const userTask = await this.userTaskRepository
+      .createQueryBuilder('userTask')
+      .leftJoinAndSelect('userTask.task', 'task')
+      .leftJoinAndSelect('userTask.user', 'user')
+      .addSelect('task.provider_config')
+      .where('userTask._id = :userTaskId', { userTaskId })
+      .getOne();
 
     if (!userTask) {
       throw new NotFoundException('UserTask not found');
@@ -457,6 +472,10 @@ export class UserTaskService {
 
       const messages = llmSession ? llmSession.messages : [];
       details.llmDetails = {
+        systemInstruction: this.getSystemInstruction(
+          llmSession?.systemInstruction,
+          task,
+        ),
         messages: messages.map(m => ({
           content: m.content,
           role: m.role,
@@ -471,14 +490,13 @@ export class UserTaskService {
   }
 
   async findByExperimentId(experimentId: string): Promise<UserTask[]> {
-    return await this.userTaskRepository.find({
-      relations: ['task', 'user'],
-      where: {
-        task: {
-          experiment_id: experimentId
-        }
-      }
-    });
+    return await this.userTaskRepository
+      .createQueryBuilder('userTask')
+      .leftJoinAndSelect('userTask.task', 'task')
+      .leftJoinAndSelect('userTask.user', 'user')
+      .addSelect('task.provider_config')
+      .where('task.experiment_id = :experimentId', { experimentId })
+      .getMany();
   }
 
   async getExecutionDetailsFromEntity(userTask: UserTask): Promise<TaskExecutionDetailsDto> {
@@ -545,6 +563,10 @@ export class UserTaskService {
 
       const messages = llmSession ? llmSession.messages : [];
       details.llmDetails = {
+        systemInstruction: this.getSystemInstruction(
+          llmSession?.systemInstruction,
+          task,
+        ),
         messages: messages.map(m => ({
           content: m.content,
           role: m.role,
@@ -559,12 +581,13 @@ export class UserTaskService {
   }
 
   async findByUserAndTask(userId: string, taskId: string): Promise<UserTask[]> {
-    return await this.userTaskRepository.find({
-      relations: ['task', 'user'],
-      where: {
-        user: { _id: userId },
-        task: { _id: taskId }
-      }
-    });
+    return await this.userTaskRepository
+      .createQueryBuilder('userTask')
+      .leftJoinAndSelect('userTask.task', 'task')
+      .leftJoinAndSelect('userTask.user', 'user')
+      .addSelect('task.provider_config')
+      .where('user._id = :userId', { userId })
+      .andWhere('task._id = :taskId', { taskId })
+      .getMany();
   }
 }
