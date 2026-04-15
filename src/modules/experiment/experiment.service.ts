@@ -9,14 +9,14 @@ import * as yaml from 'js-yaml';
 import {Repository} from 'typeorm';
 
 import {IcfService} from '../icf/icf.service';
-import { QuestionDTO, QuestionType } from '../survey/dto/question.dto';
-import { SurveyType } from '../survey/entity/survey.entity';
+import {QuestionDTO, QuestionType} from '../survey/dto/question.dto';
+import {SurveyType} from '../survey/entity/survey.entity';
 import {SurveyService} from '../survey/survey.service';
-import { Task } from '../task/entities/task.entity';
+import {Task, TaskProviderConfig} from '../task/entities/task.entity';
 import {TaskService} from '../task/task.service';
 import {UserService} from '../user/user.service';
 import {UserExperimentService} from '../user-experiment/user-experiment.service';
-import { UserTask } from '../user-task/entities/user-tasks.entity';
+import {UserTask} from '../user-task/entities/user-tasks.entity';
 import {UserTaskService} from '../user-task/user-task.service';
 import {CreateExperimentDto} from './dto/create-experiment.dto';
 import {ExperimentParticipantDto} from './dto/experiment-participant.dto';
@@ -61,6 +61,9 @@ type YamlTask = {
   max_score?: number;
   min_score?: number;
   search_source?: string;
+  search_model?: string;
+  systemInstruction?: string;
+  provider_config?: TaskProviderConfig;
   survey_id?: string | null;
 };
 
@@ -224,7 +227,7 @@ export class ExperimentService {
         taskType: data.task.search_source,
         systemInstruction:
           data.task.search_source === 'llm'
-            ? data.task.provider_config?.systemInstruction ?? null
+            ? (data.task.provider_config?.systemInstruction ?? null)
             : null,
         executions: executionsDetails,
       });
@@ -259,9 +262,9 @@ export class ExperimentService {
     id: string,
     updateExperimentDto: UpdateExperimentDto,
   ): Promise<Experiment> {
-      await this.experimentRepository.update({_id: id}, updateExperimentDto);
-      const result = await this.find(id);
-      return result;
+    await this.experimentRepository.update({_id: id}, updateExperimentDto);
+    const result = await this.find(id);
+    return result;
   }
 
   async remove(id: string) {
@@ -312,10 +315,14 @@ export class ExperimentService {
   }
 
   async exportToYaml(id: string): Promise<string> {
-    const experiment = await this.experimentRepository.findOne({
-      where: {_id: id},
-      relations: ['tasks', 'surveys', 'icfs'],
-    });
+    const experiment = await this.experimentRepository
+      .createQueryBuilder('experiment')
+      .leftJoinAndSelect('experiment.tasks', 'task')
+      .addSelect('task.provider_config')
+      .leftJoinAndSelect('experiment.surveys', 'survey')
+      .leftJoinAndSelect('experiment.icfs', 'icf')
+      .where('experiment._id = :id', {id})
+      .getOne();
 
     if (!experiment) {
       throw new Error('Experiment not found');
@@ -347,20 +354,93 @@ export class ExperimentService {
             required: survey.required,
           })) || [],
         tasks:
-          experiment.tasks?.map((task) => ({
-            title: task.title,
-            summary: task.summary,
-            description: task.description,
-            rule_type: task.rule_type,
-            max_score: task.max_score,
-            min_score: task.min_score,
-            search_source: task.search_source,
-            survey_id: task.survey_id,
-          })) || [],
+          experiment.tasks?.map((task) => {
+            const providerConfig = this.buildYamlProviderConfig(task);
+            const yamlTask: YamlTask = {
+              title: task.title,
+              summary: task.summary,
+              description: task.description,
+              rule_type: task.rule_type,
+              max_score: task.max_score,
+              min_score: task.min_score,
+              search_source: task.search_source,
+              survey_id: task.survey_id,
+            };
+
+            const searchModel =
+              providerConfig?.model || providerConfig?.searchProvider;
+            if (searchModel) {
+              yamlTask.search_model = searchModel;
+            }
+            if (providerConfig?.systemInstruction) {
+              yamlTask.systemInstruction = providerConfig.systemInstruction;
+            }
+            if (providerConfig) {
+              yamlTask.provider_config = providerConfig;
+            }
+
+            return yamlTask;
+          }) || [],
       },
     };
 
     return yaml.dump(yamlData);
+  }
+
+  private buildYamlProviderConfig(task: Task): TaskProviderConfig | undefined {
+    const providerConfig = task.provider_config || {};
+    const yamlProviderConfig: TaskProviderConfig = {};
+
+    if (task.search_source === 'llm') {
+      if (providerConfig.modelProvider) {
+        yamlProviderConfig.modelProvider = providerConfig.modelProvider;
+      }
+      if (providerConfig.model) {
+        yamlProviderConfig.model = providerConfig.model;
+      }
+      if (providerConfig.systemInstruction) {
+        yamlProviderConfig.systemInstruction = providerConfig.systemInstruction;
+      }
+    }
+
+    if (
+      task.search_source === 'search-engine' &&
+      providerConfig.searchProvider
+    ) {
+      yamlProviderConfig.searchProvider = providerConfig.searchProvider;
+    }
+
+    return Object.keys(yamlProviderConfig).length > 0
+      ? yamlProviderConfig
+      : undefined;
+  }
+
+  private buildProviderConfigFromYaml(
+    task: YamlTask,
+  ): TaskProviderConfig | undefined {
+    const providerConfig: TaskProviderConfig = {
+      ...(task.provider_config || {}),
+    };
+
+    if (task.search_source === 'llm') {
+      providerConfig.modelProvider = providerConfig.modelProvider || 'google';
+      if (task.search_model && !providerConfig.model) {
+        providerConfig.model = task.search_model;
+      }
+      if (task.systemInstruction && !providerConfig.systemInstruction) {
+        providerConfig.systemInstruction = task.systemInstruction;
+      }
+    }
+
+    if (
+      task.search_source === 'search-engine' &&
+      task.search_model &&
+      !providerConfig.searchProvider
+    ) {
+      providerConfig.searchProvider = task.search_model;
+    }
+
+    return Object.keys(providerConfig).length > 0 ? providerConfig : undefined;
   }
 
   async importFromYaml(
@@ -446,6 +526,7 @@ export class ExperimentService {
             max_score: task.max_score || 0,
             questionsId: [],
             experiment_id: savedExperiment._id,
+            provider_config: this.buildProviderConfigFromYaml(task),
           });
         });
         await Promise.all(tasksPromises);
@@ -456,7 +537,7 @@ export class ExperimentService {
       console.error('Error importing YAML:', error);
       throw new Error(
         `Failed to import experiment: ${error instanceof Error ? error.message : 'unknown error'}`,
-        { cause: error },
+        {cause: error},
       );
     }
   }

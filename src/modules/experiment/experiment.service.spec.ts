@@ -3,20 +3,24 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import type { TestingModule } from '@nestjs/testing';
-import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import type {TestingModule} from '@nestjs/testing';
+import {Test} from '@nestjs/testing';
+import {getRepositoryToken} from '@nestjs/typeorm';
 
-import { IcfService } from '../icf/icf.service';
-import { SurveyType } from '../survey/entity/survey.entity';
-import { SurveyService } from '../survey/survey.service';
-import { TaskService } from '../task/task.service';
-import { UserService } from '../user/user.service';
-import { UserExperimentService } from '../user-experiment/user-experiment.service';
-import { UserTaskService } from '../user-task/user-task.service';
-import type { CreateExperimentDto } from './dto/create-experiment.dto';
-import { Experiment, ExperimentStatus,StepsType } from './entity/experiment.entity';
-import { ExperimentService } from './experiment.service';
+import {IcfService} from '../icf/icf.service';
+import {SurveyType} from '../survey/entity/survey.entity';
+import {SurveyService} from '../survey/survey.service';
+import {TaskService} from '../task/task.service';
+import {UserService} from '../user/user.service';
+import {UserExperimentService} from '../user-experiment/user-experiment.service';
+import {UserTaskService} from '../user-task/user-task.service';
+import type {CreateExperimentDto} from './dto/create-experiment.dto';
+import {
+  Experiment,
+  ExperimentStatus,
+  StepsType,
+} from './entity/experiment.entity';
+import {ExperimentService} from './experiment.service';
 
 describe('ExperimentService', () => {
   let service: ExperimentService;
@@ -24,10 +28,17 @@ describe('ExperimentService', () => {
     find: jest.Mock;
     findOneBy: jest.Mock;
     findOne: jest.Mock;
+    createQueryBuilder: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
+  };
+  let mockExperimentQueryBuilder: {
+    leftJoinAndSelect: jest.Mock;
+    addSelect: jest.Mock;
+    where: jest.Mock;
+    getOne: jest.Mock;
   };
   let mockUserExperimentService: {
     getDetailedStats: jest.Mock;
@@ -58,11 +69,21 @@ describe('ExperimentService', () => {
       find: jest.fn(),
       findOneBy: jest.fn(),
       findOne: jest.fn(),
+      createQueryBuilder: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     };
+    mockExperimentQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getOne: jest.fn(),
+    };
+    mockExperimentRepository.createQueryBuilder.mockReturnValue(
+      mockExperimentQueryBuilder,
+    );
 
     mockUserExperimentService = {
       getDetailedStats: jest.fn(),
@@ -164,18 +185,18 @@ describe('ExperimentService', () => {
         ],
         typeExperiment: 'within-subject',
         betweenExperimentType: null,
-        icf: { title: 'ICF Title', description: 'ICF Description' },
+        icf: {title: 'ICF Title', description: 'ICF Description'},
       };
 
-      const mockUser = { _id: 'owner-1', name: 'Owner' };
-      const savedExperiment = { _id: 'exp-1', ...createExperimentDto };
+      const mockUser = {_id: 'owner-1', name: 'Owner'};
+      const savedExperiment = {_id: 'exp-1', ...createExperimentDto};
 
       mockUserService.findOne.mockResolvedValue(mockUser);
       mockExperimentRepository.create.mockReturnValue(savedExperiment);
       mockExperimentRepository.save.mockResolvedValue(savedExperiment);
-      mockSurveyService.create.mockResolvedValue({ _id: 'survey-1' });
-      mockTaskService.create.mockResolvedValue({ _id: 'task-1' });
-      mockIcfService.create.mockResolvedValue({ _id: 'icf-1' });
+      mockSurveyService.create.mockResolvedValue({_id: 'survey-1'});
+      mockTaskService.create.mockResolvedValue({_id: 'task-1'});
+      mockIcfService.create.mockResolvedValue({_id: 'icf-1'});
 
       const result = await service.create(createExperimentDto);
 
@@ -191,8 +212,8 @@ describe('ExperimentService', () => {
   describe('findAll', () => {
     it('should return all experiments', async () => {
       const experiments = [
-        { _id: 'exp-1', name: 'Experiment 1' },
-        { _id: 'exp-2', name: 'Experiment 2' },
+        {_id: 'exp-1', name: 'Experiment 1'},
+        {_id: 'exp-2', name: 'Experiment 2'},
       ];
 
       mockExperimentRepository.find.mockResolvedValue(experiments);
@@ -206,7 +227,7 @@ describe('ExperimentService', () => {
 
   describe('find', () => {
     it('should find an experiment by id', async () => {
-      const experiment = { _id: 'exp-1', name: 'Experiment 1' };
+      const experiment = {_id: 'exp-1', name: 'Experiment 1'};
       mockExperimentRepository.findOneBy.mockResolvedValue(experiment);
 
       const result = await service.find('exp-1');
@@ -220,7 +241,7 @@ describe('ExperimentService', () => {
 
   describe('getStats', () => {
     it('should return experiment stats', async () => {
-      const stats = { totalParticipants: 10, completedTasks: 8 };
+      const stats = {totalParticipants: 10, completedTasks: 8};
       mockUserExperimentService.getDetailedStats.mockResolvedValue(stats);
 
       const result = await service.getStats('exp-1');
@@ -235,8 +256,8 @@ describe('ExperimentService', () => {
   describe('getParticipants', () => {
     it('should return experiment participants', async () => {
       const participants = [
-        { userId: 'user-1', status: 'completed' },
-        { userId: 'user-2', status: 'pending' },
+        {userId: 'user-1', status: 'completed'},
+        {userId: 'user-2', status: 'pending'},
       ];
       mockUserExperimentService.getParticipantsDetails.mockResolvedValue(
         participants,
@@ -256,14 +277,14 @@ describe('ExperimentService', () => {
       const experiment = {
         _id: 'exp-1',
         name: 'Experiment 1',
-        tasks: [{ _id: 'task-1', title: 'Task 1' }],
+        tasks: [{_id: 'task-1', title: 'Task 1'}],
       };
       mockExperimentRepository.findOne.mockResolvedValue(experiment);
 
       const result = await service.findWithTasks('exp-1');
 
       expect(mockExperimentRepository.findOne).toHaveBeenCalledWith({
-        where: { _id: 'exp-1' },
+        where: {_id: 'exp-1'},
         relations: ['tasks'],
       });
       expect(result).toEqual(experiment);
@@ -273,14 +294,14 @@ describe('ExperimentService', () => {
   describe('getTasksExecutionDetails', () => {
     it('should return tasks execution details grouped by task', async () => {
       const userTasks = [
-        { task_id: 'task-1', task: { title: 'Task 1' }, execution: 'data-1' },
-        { task_id: 'task-1', task: { title: 'Task 1' }, execution: 'data-2' },
+        {task_id: 'task-1', task: {title: 'Task 1'}, execution: 'data-1'},
+        {task_id: 'task-1', task: {title: 'Task 1'}, execution: 'data-2'},
       ];
 
       mockUserTaskService.findByExperimentId.mockResolvedValue(userTasks);
       mockUserTaskService.getExecutionDetailsFromEntity
-        .mockResolvedValueOnce({ details: 'execution-1' })
-        .mockResolvedValueOnce({ details: 'execution-2' });
+        .mockResolvedValueOnce({details: 'execution-1'})
+        .mockResolvedValueOnce({details: 'execution-2'});
 
       const result = await service.getTasksExecutionDetails('exp-1');
 
@@ -296,14 +317,14 @@ describe('ExperimentService', () => {
   describe('getSurveysStats', () => {
     it('should return surveys statistics', async () => {
       const surveys = [
-        { _id: 'survey-1', title: 'Survey 1' },
-        { _id: 'survey-2', title: 'Survey 2' },
+        {_id: 'survey-1', title: 'Survey 1'},
+        {_id: 'survey-2', title: 'Survey 2'},
       ];
 
       mockSurveyService.findByExperimentId.mockResolvedValue(surveys);
       mockSurveyService.getStats
-        .mockResolvedValueOnce({ responses: 10 })
-        .mockResolvedValueOnce({ responses: 8 });
+        .mockResolvedValueOnce({responses: 10})
+        .mockResolvedValueOnce({responses: 8});
 
       const result = await service.getSurveysStats('exp-1');
 
@@ -316,16 +337,19 @@ describe('ExperimentService', () => {
 
   describe('update', () => {
     it('should update an experiment', async () => {
-      const updateDto = { name: 'Updated Experiment', status: ExperimentStatus.IN_PROGRESS };
-      const updatedExperiment = { _id: 'exp-1', ...updateDto };
+      const updateDto = {
+        name: 'Updated Experiment',
+        status: ExperimentStatus.IN_PROGRESS,
+      };
+      const updatedExperiment = {_id: 'exp-1', ...updateDto};
 
-      mockExperimentRepository.update.mockResolvedValue({ affected: 1 });
+      mockExperimentRepository.update.mockResolvedValue({affected: 1});
       mockExperimentRepository.findOneBy.mockResolvedValue(updatedExperiment);
 
       const result = await service.update('exp-1', updateDto);
 
       expect(mockExperimentRepository.update).toHaveBeenCalledWith(
-        { _id: 'exp-1' },
+        {_id: 'exp-1'},
         updateDto,
       );
       expect(result).toEqual(updatedExperiment);
@@ -334,9 +358,9 @@ describe('ExperimentService', () => {
 
   describe('remove', () => {
     it('should remove an experiment', async () => {
-      const experiment = { _id: 'exp-1', name: 'Experiment 1' };
+      const experiment = {_id: 'exp-1', name: 'Experiment 1'};
       mockExperimentRepository.findOneBy.mockResolvedValue(experiment);
-      mockExperimentRepository.delete.mockResolvedValue({ affected: 1 });
+      mockExperimentRepository.delete.mockResolvedValue({affected: 1});
 
       const result = await service.remove('exp-1');
 
@@ -351,11 +375,11 @@ describe('ExperimentService', () => {
     it('should build experiment steps correctly', async () => {
       const experiment = {
         _id: 'exp-1',
-        icfs: [{ _id: 'icf-1' }],
-        tasks: [{ _id: 'task-1' }],
+        icfs: [{_id: 'icf-1'}],
+        tasks: [{_id: 'task-1'}],
         surveys: [
-          { _id: 'survey-1', type: SurveyType.PRE },
-          { _id: 'survey-2', type: SurveyType.POST },
+          {_id: 'survey-1', type: SurveyType.PRE},
+          {_id: 'survey-2', type: SurveyType.POST},
         ],
       };
 
@@ -378,7 +402,7 @@ describe('ExperimentService', () => {
         summary: 'Test Summary',
         typeExperiment: 'within-subject',
         betweenExperimentType: null,
-        icfs: [{ title: 'ICF Title', description: 'ICF Description' }],
+        icfs: [{title: 'ICF Title', description: 'ICF Description'}],
         surveys: [
           {
             name: 'Survey 1',
@@ -398,22 +422,33 @@ describe('ExperimentService', () => {
             rule_type: 'score',
             max_score: 100,
             min_score: 0,
-            search_source: 'search-engine',
+            search_source: 'llm',
+            provider_config: {
+              modelProvider: 'google',
+              model: 'gemini-2.5-flash',
+              systemInstruction: 'Answer as a research assistant.',
+              apiKey: 'secret-api-key',
+            },
             survey_id: 'survey-1',
           },
         ],
       };
 
-      mockExperimentRepository.findOne.mockResolvedValue(experiment);
+      mockExperimentQueryBuilder.getOne.mockResolvedValue(experiment);
 
       const result = await service.exportToYaml('exp-1');
 
       expect(typeof result).toBe('string');
       expect(result).toContain('Test Experiment');
+      expect(result).toContain(
+        'systemInstruction: Answer as a research assistant.',
+      );
+      expect(result).toContain('search_model: gemini-2.5-flash');
+      expect(result).not.toContain('secret-api-key');
     });
 
     it('should throw error if experiment not found', async () => {
-      mockExperimentRepository.findOne.mockResolvedValue(null);
+      mockExperimentQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.exportToYaml('exp-1')).rejects.toThrow(
         'Experiment not found',
@@ -447,14 +482,16 @@ describe('ExperimentService', () => {
             - title: Task 1
               summary: Task Summary
               description: Task Description
-              search_source: search-engine
+              search_source: llm
+              search_model: gemini-2.5-flash
+              systemInstruction: Answer as a research assistant.
               rule_type: score
               min_score: 0
               max_score: 100
       `;
 
-      const mockUser = { _id: 'owner-1' };
-      const savedExperiment = { _id: 'exp-1', name: 'Test Import' };
+      const mockUser = {_id: 'owner-1'};
+      const savedExperiment = {_id: 'exp-1', name: 'Test Import'};
 
       mockUserService.findOne.mockResolvedValue(mockUser);
       mockExperimentRepository.create.mockReturnValue(savedExperiment);
@@ -467,6 +504,15 @@ describe('ExperimentService', () => {
 
       expect(result).toEqual([]);
       expect(mockExperimentRepository.save).toHaveBeenCalled();
+      expect(mockTaskService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider_config: expect.objectContaining({
+            modelProvider: 'google',
+            model: 'gemini-2.5-flash',
+            systemInstruction: 'Answer as a research assistant.',
+          }),
+        }),
+      );
     });
 
     it('should return validation errors for invalid YAML', async () => {
@@ -484,8 +530,8 @@ describe('ExperimentService', () => {
 
   describe('getGeneralExpirementInfos', () => {
     it('should return general experiment information', async () => {
-      const experiment = { _id: 'exp-1', status: 'active' };
-      const userInfos = { total: 10, completed: 8 };
+      const experiment = {_id: 'exp-1', status: 'active'};
+      const userInfos = {total: 10, completed: 8};
 
       mockExperimentRepository.findOneBy.mockResolvedValue(experiment);
       mockUserExperimentService.countUsersByExperimentId.mockResolvedValue(
@@ -501,7 +547,7 @@ describe('ExperimentService', () => {
 
   describe('findOneByName', () => {
     it('should find experiment by name', async () => {
-      const experiment = { _id: 'exp-1', name: 'Test Experiment' };
+      const experiment = {_id: 'exp-1', name: 'Test Experiment'};
       mockExperimentRepository.findOneBy.mockResolvedValue(experiment);
 
       const result = await service.findOneByName('Test Experiment');
@@ -515,13 +561,13 @@ describe('ExperimentService', () => {
 
   describe('findByOwnerId', () => {
     it('should find experiments by owner id', async () => {
-      const experiments = [{ _id: 'exp-1', owner_id: 'owner-1' }];
+      const experiments = [{_id: 'exp-1', owner_id: 'owner-1'}];
       mockExperimentRepository.find.mockResolvedValue(experiments);
 
       const result = await service.findByOwnerId('owner-1');
 
       expect(mockExperimentRepository.find).toHaveBeenCalledWith({
-        where: { owner_id: 'owner-1' },
+        where: {owner_id: 'owner-1'},
       });
       expect(result).toEqual(experiments);
     });
