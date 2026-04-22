@@ -3,8 +3,16 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Body, Controller, Param, Post, Res, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {AuthGuard} from '@nestjs/passport';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -14,44 +22,80 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import {Response} from 'express';
 
-import { LlmSessionResponseDto } from './dto/llm-session-response.dto';
-import { LlmSessionService } from './llm-session.service';
+import {LlmProviderModelsResponseDto} from './dto/llm-provider-models-response.dto';
+import {LlmProviderResponseDto} from './dto/llm-provider-response.dto';
+import {LlmSessionResponseDto} from './dto/llm-session-response.dto';
+import {LlmSessionService} from './llm-session.service';
 
 @ApiTags('LLM Session')
 @ApiBearerAuth('jwt')
 @UseGuards(AuthGuard('jwt'))
 @Controller('llm-session')
 export class LlmSessionController {
-  constructor(private readonly llmSessionService: LlmSessionService) { }
+  constructor(private readonly llmSessionService: LlmSessionService) {}
+
+  @Get('providers')
+  @ApiOperation({summary: 'List supported LLM providers'})
+  @ApiResponse({
+    status: 200,
+    description: 'Supported providers.',
+    type: LlmProviderResponseDto,
+    isArray: true,
+  })
+  getProviders(): LlmProviderResponseDto[] {
+    return this.llmSessionService.getProviders();
+  }
+
+  @Get('providers/:provider/models')
+  @ApiOperation({summary: 'List suggested models for an LLM provider'})
+  @ApiParam({
+    name: 'provider',
+    type: String,
+    description: 'Provider identifier',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Suggested provider models.',
+    type: LlmProviderModelsResponseDto,
+  })
+  getProviderModels(
+    @Param('provider') provider: string,
+  ): LlmProviderModelsResponseDto {
+    return this.llmSessionService.getProviderModels(provider);
+  }
 
   @Post('start')
-  @ApiOperation({ summary: 'Start an LLM session' })
+  @ApiOperation({summary: 'Start an LLM session'})
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        taskId: { type: 'string', description: 'Task ID' },
-        userId: { type: 'string', description: 'User ID' },
+        taskId: {type: 'string', description: 'Task ID'},
+        userId: {type: 'string', description: 'User ID'},
       },
       required: ['taskId', 'userId'],
     },
   })
-  @ApiResponse({ status: 201, description: 'Session started.', type: LlmSessionResponseDto })
-  async startSession(@Body() body: { taskId: string; userId: string }) {
+  @ApiResponse({
+    status: 201,
+    description: 'Session started.',
+    type: LlmSessionResponseDto,
+  })
+  async startSession(@Body() body: {taskId: string; userId: string}) {
     return this.llmSessionService.startSession(body.userId, body.taskId);
   }
 
   @Post(':id/message')
-  @ApiOperation({ summary: 'Send a message to an LLM session' })
-  @ApiParam({ name: 'id', type: String, description: 'LLM session ID' })
+  @ApiOperation({summary: 'Send a message to an LLM session'})
+  @ApiParam({name: 'id', type: String, description: 'LLM session ID'})
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        userId: { type: 'string', description: 'User ID' },
-        content: { type: 'string', description: 'Message content' },
+        userId: {type: 'string', description: 'User ID'},
+        content: {type: 'string', description: 'Message content'},
       },
       required: ['userId', 'content'],
     },
@@ -62,19 +106,20 @@ export class LlmSessionController {
     description: 'Streaming response from the model.',
     schema: {
       type: 'string',
-      example: 'This topic can be explored by comparing multiple independent sources...',
+      example:
+        'This topic can be explored by comparing multiple independent sources...',
     },
   })
   async sendMessage(
     @Param('id') sessionId: string,
-    @Body() body: { userId: string; content: string },
+    @Body() body: {userId: string; content: string},
     @Res() res: Response,
   ) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
     try {
-      const { stream, saveBotResponse } =
+      const {stream, saveBotResponse} =
         await this.llmSessionService.processChatMessage(
           sessionId,
           body.userId,

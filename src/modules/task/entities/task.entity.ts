@@ -3,20 +3,21 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { BaseEntity } from 'src/model/base-entity';
-import { Experiment } from 'src/modules/experiment/entity/experiment.entity';
-import { LlmSession } from 'src/modules/llm-session/entity/llm-session.entity';
-import { Survey } from 'src/modules/survey/entity/survey.entity';
-import { TaskQuestionMap } from 'src/modules/task-question-map/entity/taskQuestionMap.entity';
-import { UserTask } from 'src/modules/user-task/entities/user-tasks.entity';
-import { UserTaskSession } from 'src/modules/user-task-session/entities/user-task-session.entity';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import {BaseEntity} from 'src/model/base-entity';
+import {Experiment} from 'src/modules/experiment/entity/experiment.entity';
+import {LlmSession} from 'src/modules/llm-session/entity/llm-session.entity';
+import {Survey} from 'src/modules/survey/entity/survey.entity';
+import {TaskQuestionMap} from 'src/modules/task-question-map/entity/taskQuestionMap.entity';
+import {UserTask} from 'src/modules/user-task/entities/user-tasks.entity';
+import {UserTaskSession} from 'src/modules/user-task-session/entities/user-task-session.entity';
+import {Column, Entity, ManyToOne, OneToMany} from 'typeorm';
 
 export type TaskProviderConfig = {
   modelProvider?: string;
   searchProvider?: string;
   model?: string;
   apiKey?: string;
+  baseURL?: string;
   cx?: string;
   systemInstruction?: string;
   [key: string]: unknown;
@@ -56,7 +57,7 @@ export class Task extends BaseEntity {
     onDelete: 'CASCADE',
   })
   survey: Survey;
-  @Column({ nullable: true })
+  @Column({nullable: true})
   survey_id: string;
 
   @OneToMany(() => TaskQuestionMap, (taskQuestionMap) => taskQuestionMap.task, {
@@ -64,15 +65,15 @@ export class Task extends BaseEntity {
   })
   taskQuestionsMap: TaskQuestionMap[];
 
-  @Column({ nullable: true })
+  @Column({nullable: true})
   rule_type: string;
 
-  @Column({ nullable: true })
+  @Column({nullable: true})
   max_score: number;
-  @Column({ nullable: true })
+  @Column({nullable: true})
   min_score: number;
 
-  @OneToMany(() => UserTask, (userTask) => userTask.task, { cascade: true })
+  @OneToMany(() => UserTask, (userTask) => userTask.task, {cascade: true})
   userTasks: UserTask[];
 
   @OneToMany(() => UserTaskSession, (session) => session.task)

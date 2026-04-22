@@ -8,9 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@google/generative-ai':
-        specifier: ^0.24.1
-        version: 0.24.1
+      '@langchain/core':
+        specifier: ^1.1.40
+        version: 1.1.40(openai@6.34.0(zod@4.3.6))
+      '@langchain/openai':
+        specifier: ^1.4.4
+        version: 1.4.4(@langchain/core@1.1.40(openai@6.34.0(zod@4.3.6)))
       '@nestjs-modules/mailer':
         specifier: ^1.11.2
         version: 1.11.2(@nestjs/common@11.1.16(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.1.14)(rxjs@7.8.2))(@nestjs/core@11.1.16)(nodemailer@6.10.1)
@@ -120,6 +123,9 @@ importers:
       '@types/node':
         specifier: ^20.19.37
         version: 20.19.37
+      '@types/validator':
+        specifier: ^13.15.10
+        version: 13.15.10
       axios:
         specifier: ^1.13.6
         version: 1.13.6
@@ -362,6 +368,9 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
+  '@cfworker/json-schema@4.1.1':
+    resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
+
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
@@ -393,28 +402,24 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@css-inline/css-inline-linux-arm64-musl@0.13.0':
     resolution: {integrity: sha512-V5h5+CRnE01EgoafI/kyjEcM8zvN+sKLnp17Aq9LqQfsut7mO3i72d8g/xeVC37DCLoGQFLvDCzbze2NbF2dIQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@css-inline/css-inline-linux-x64-gnu@0.13.0':
     resolution: {integrity: sha512-vbRV++73MW7dvz/AIbozkv4R68/k/sEp57hno/L6lx034VYxpCwdfqtGN4D0W1TOTzdr2b6qBOGNZ1oLKQZOQQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@css-inline/css-inline-linux-x64-musl@0.13.0':
     resolution: {integrity: sha512-2tCnwU23W/yMs9cGc2/i2jd9y2pjuntx0a5OytqX7s9fvUtmI3nc0Od6wuf51LnmdU+XAU8HLT9pZppsQiwPfQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@css-inline/css-inline-win32-x64-msvc@0.13.0':
     resolution: {integrity: sha512-6VFhFSXp4FH+NzJhLd6fFi7jKCPvIRW+vq0tV+CPuiQ3zPzMfC9nIk8sB/1VJR8EcvBAjMV53YnacuDjRFRT9g==}
@@ -464,10 +469,6 @@ packages:
   '@eslint/plugin-kit@0.6.1':
     resolution: {integrity: sha512-iH1B076HoAshH1mLpHMgwdGeTs0CYwL0SPMkGuSebZrwBp16v415e9NZXg2jtrqPVQjf6IANe2Vtlr5KswtcZQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
-
-  '@google/generative-ai@0.24.1':
-    resolution: {integrity: sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==}
-    engines: {node: '>=18.0.0'}
 
   '@hapi/address@5.1.1':
     resolution: {integrity: sha512-A+po2d/dVoY7cYajycYI43ZbYMXukuopIsqCjh5QzsBCipDtdofHntljDlpccMjIfTy6UOkg+5KPriwYch2bXA==}
@@ -747,6 +748,16 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@langchain/core@1.1.40':
+    resolution: {integrity: sha512-RJ41GQEMxr9ZEZNoIiPgW0+v9nAY6FEZGlk+MjBghr2GR8He50abLam0XCe1aqUJjuKbqt2lUD6M+6SZ+2NIJg==}
+    engines: {node: '>=20'}
+
+  '@langchain/openai@1.4.4':
+    resolution: {integrity: sha512-mRr/X5rvlwPj6cSXPxbL+CtOqYANO1/+CQ3Z+5t48kWnrlgPYOazmA+UAWvqQOuwJ6LaYn3SFrt43rR4lte/Ow==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.1.39
 
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
@@ -1680,6 +1691,10 @@ packages:
       supports-color:
         optional: true
 
+  decamelize@1.2.0:
+    resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
+    engines: {node: '>=0.10.0'}
+
   dedent@1.7.2:
     resolution: {integrity: sha512-WzMx3mW98SN+zn3hgemf4OzdmyNhhhKz5Ay0pUfQiMQ3e1g+xmTJWp/pKdwKVXhdSkAEGIIzqeuWrL3mV/AXbA==}
     peerDependencies:
@@ -1974,6 +1989,9 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
+
+  eventemitter3@4.0.7:
+    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
@@ -2581,6 +2599,9 @@ packages:
   js-stringify@1.0.2:
     resolution: {integrity: sha512-rtS5ATOo2Q5k1G+DADISilDA6lv79zIiwFd6CcjuIxGKLFm5C+RLImRscVap9k55i+MOZwgliw+NejvkLuGD5g==}
 
+  js-tiktoken@1.0.21:
+    resolution: {integrity: sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -2647,6 +2668,26 @@ packages:
   kleur@3.0.3:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
     engines: {node: '>=6'}
+
+  langsmith@0.5.21:
+    resolution: {integrity: sha512-l140hzgqo91T/QKDXLEfRnnxahuwVEVohr9zqpy3BaGDeBdrPiJuNJ2TBhPZxNXNCl68IkVcn555FD3jp5peyw==}
+    peerDependencies:
+      '@opentelemetry/api': '*'
+      '@opentelemetry/exporter-trace-otlp-proto': '*'
+      '@opentelemetry/sdk-trace-base': '*'
+      openai: '*'
+      ws: '>=7'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      '@opentelemetry/exporter-trace-otlp-proto':
+        optional: true
+      '@opentelemetry/sdk-trace-base':
+        optional: true
+      openai:
+        optional: true
+      ws:
+        optional: true
 
   leac@0.6.0:
     resolution: {integrity: sha512-y+SqErxb8h7nE/fiEX07jsbuhrpO9lL8eca7/Y1nuWV2moNlXhyd59iDGcRf6moVyDMbmTNzL40SUyrFU/yDpg==}
@@ -2951,6 +2992,10 @@ packages:
     resolution: {integrity: sha512-mo+QTzKlx8R7E5ylSXxWzGoXoZbOsRMpyitcht8By2KHvMbf3tjwosZ/Mu/XYU6UuJ3VZnODIrak5ZrPiPyB6A==}
     engines: {node: '>= 10.16.0'}
 
+  mustache@4.2.0:
+    resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
+    hasBin: true
+
   mute-stream@2.0.0:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
@@ -3047,6 +3092,18 @@ packages:
     resolution: {integrity: sha512-MVHddDVweXZF3awtlAS+6pgKLlm/JgxZ90+/NBurBoQctVOOB/zDdVjcyPzQ+0laDGbsWgrRkflI65sQeOgT9Q==}
     engines: {node: '>=8'}
 
+  openai@6.34.0:
+    resolution: {integrity: sha512-yEr2jdGf4tVFYG6ohmr3pF6VJuveP0EA/sS8TBx+4Eq5NT10alu5zg2dmxMXMgqpihRDQlFGpRt2XwsGj+Fyxw==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -3078,6 +3135,10 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
+
+  p-queue@6.6.2:
+    resolution: {integrity: sha512-RwFpb72c/BhQLEXIZ5K2e+AhgNVmIejGlTgiB9MzZ0e93GRvqZ7uSi0dvRF7/XIXDeNkra2fNHBxTyPDGySpjQ==}
+    engines: {node: '>=8'}
 
   p-timeout@3.2.0:
     resolution: {integrity: sha512-rhIwUycgwwKcP9yTOOFK/AKsAopjjCakVqLHePO3CC6Mir1Z99xT+R63jZxAT5lFZLa2inS5h+ZS2GvR99/FBg==}
@@ -3918,6 +3979,10 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
+  uuid@10.0.0:
+    resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    hasBin: true
+
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
@@ -4060,6 +4125,9 @@ packages:
   yoctocolors-cjs@2.1.3:
     resolution: {integrity: sha512-U/PBtDf35ff0D8X8D0jfdzHYEPFxAI7jJlxZXwCSez5M3190m+QobIfh+sWDWSHMCWWJN2AWamkegn6vr6YBTw==}
     engines: {node: '>=18'}
+
+  zod@4.3.6:
+    resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
 snapshots:
 
@@ -4310,6 +4378,8 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
+  '@cfworker/json-schema@4.1.1': {}
+
   '@colors/colors@1.5.0':
     optional: true
 
@@ -4385,8 +4455,6 @@ snapshots:
     dependencies:
       '@eslint/core': 1.1.1
       levn: 0.4.1
-
-  '@google/generative-ai@0.24.1': {}
 
   '@hapi/address@5.1.1':
     dependencies:
@@ -4764,6 +4832,35 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@langchain/core@1.1.40(openai@6.34.0(zod@4.3.6))':
+    dependencies:
+      '@cfworker/json-schema': 4.1.1
+      '@standard-schema/spec': 1.1.0
+      ansi-styles: 5.2.0
+      camelcase: 6.3.0
+      decamelize: 1.2.0
+      js-tiktoken: 1.0.21
+      langsmith: 0.5.21(openai@6.34.0(zod@4.3.6))
+      mustache: 4.2.0
+      p-queue: 6.6.2
+      uuid: 11.1.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+      - ws
+
+  '@langchain/openai@1.4.4(@langchain/core@1.1.40(openai@6.34.0(zod@4.3.6)))':
+    dependencies:
+      '@langchain/core': 1.1.40(openai@6.34.0(zod@4.3.6))
+      js-tiktoken: 1.0.21
+      openai: 6.34.0(zod@4.3.6)
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - ws
 
   '@lukeed/csprng@1.1.0': {}
 
@@ -5850,6 +5947,8 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
+  decamelize@1.2.0: {}
+
   dedent@1.7.2: {}
 
   deep-extend@0.6.0: {}
@@ -6111,6 +6210,8 @@ snapshots:
   esutils@2.0.3: {}
 
   etag@1.8.1: {}
+
+  eventemitter3@4.0.7: {}
 
   events@3.3.0: {}
 
@@ -7019,6 +7120,10 @@ snapshots:
 
   js-stringify@1.0.2: {}
 
+  js-tiktoken@1.0.21:
+    dependencies:
+      base64-js: 1.5.1
+
   js-tokens@4.0.0: {}
 
   js-yaml@3.14.2:
@@ -7096,6 +7201,13 @@ snapshots:
       json-buffer: 3.0.1
 
   kleur@3.0.3: {}
+
+  langsmith@0.5.21(openai@6.34.0(zod@4.3.6)):
+    dependencies:
+      p-queue: 6.6.2
+      uuid: 10.0.0
+    optionalDependencies:
+      openai: 6.34.0(zod@4.3.6)
 
   leac@0.6.0: {}
 
@@ -7569,6 +7681,8 @@ snapshots:
       concat-stream: 2.0.0
       type-is: 1.6.18
 
+  mustache@4.2.0: {}
+
   mute-stream@2.0.0: {}
 
   natural-compare@1.4.0: {}
@@ -7642,6 +7756,10 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
+  openai@6.34.0(zod@4.3.6):
+    optionalDependencies:
+      zod: 4.3.6
+
   optionator@0.9.4:
     dependencies:
       deep-is: 0.1.4
@@ -7684,6 +7802,11 @@ snapshots:
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
+
+  p-queue@6.6.2:
+    dependencies:
+      eventemitter3: 4.0.7
+      p-timeout: 3.2.0
 
   p-timeout@3.2.0:
     dependencies:
@@ -8500,6 +8623,8 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
+  uuid@10.0.0: {}
+
   uuid@11.1.0: {}
 
   uuid@9.0.1: {}
@@ -8664,3 +8789,5 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoctocolors-cjs@2.1.3: {}
+
+  zod@4.3.6: {}
