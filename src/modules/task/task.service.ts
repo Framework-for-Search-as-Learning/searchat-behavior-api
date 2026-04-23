@@ -15,6 +15,7 @@ import { In, Repository } from 'typeorm';
 import { ExperimentService } from '../experiment/experiment.service';
 import { SurveyService } from '../survey/survey.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
+import { getDisplayProviderValue } from '../llm-session/constants/llm-provider-registry.constants';
 import { PROVIDER_CONFIG_SECRET_KEYS } from './constants/provider-config.constants';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -37,6 +38,31 @@ export class TaskService {
     @Inject(forwardRef(() => TaskQuestionMapService))
     private readonly taskQuestionMapService: TaskQuestionMapService,
   ) { }
+
+  private normalizeProviderConfigForOutput(
+    providerConfig?: TaskProviderConfig,
+  ): TaskProviderConfig | undefined {
+    if (!providerConfig) {
+      return undefined;
+    }
+
+    const displayProvider = getDisplayProviderValue(
+      typeof providerConfig.modelProvider === 'string'
+        ? providerConfig.modelProvider
+        : undefined,
+      typeof providerConfig.model === 'string' ? providerConfig.model : undefined,
+    );
+
+    if (!displayProvider) {
+      return providerConfig;
+    }
+
+    return {
+      ...providerConfig,
+      modelProvider: displayProvider,
+    };
+  }
+
   private applyProviderConfigMask(task: Task | null): TaskWithProviderMask | null {
     if (!task) {
       return task;
@@ -46,7 +72,9 @@ export class TaskService {
     );
     return {
       ...task,
-      provider_config: sanitized as Record<string, unknown>,
+      provider_config: this.normalizeProviderConfigForOutput(
+        sanitized as TaskProviderConfig,
+      ) as Record<string, unknown>,
       provider_config_masked: masked,
     } as TaskWithProviderMask;
   }

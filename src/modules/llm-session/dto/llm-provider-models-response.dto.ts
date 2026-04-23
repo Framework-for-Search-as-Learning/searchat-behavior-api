@@ -11,14 +11,14 @@ export class LlmProviderModelsResponseDto {
 
   @ApiProperty({
     description: 'Default model used by the backend registry',
-    example: 'gpt-4o-mini',
+    example: 'openai/gpt-4o-mini',
   })
   defaultModel: string;
 
   @ApiProperty({
     description:
       'Backend-controlled model suggestions. These are suggestions, not a closed validation list.',
-    example: ['gpt-4o-mini'],
+    example: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'openai/gpt-4.1'],
     isArray: true,
   })
   suggestedModels: string[];

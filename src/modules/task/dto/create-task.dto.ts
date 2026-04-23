@@ -98,7 +98,7 @@ export class CreateTaskDto {
     example: {
       model: 'openai/gpt-4o-mini',
       apiKey: 'sk-or-v1-...',
-      modelProvider: 'openrouter',
+      modelProvider: 'openai',
     },
     required: false,
   })

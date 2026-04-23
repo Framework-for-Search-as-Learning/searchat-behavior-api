@@ -72,7 +72,7 @@ export class TaskResponseDto {
     example: {
       model: 'openai/gpt-4o-mini',
       apiKey: 'sk-o-----v1-1234',
-      modelProvider: 'openrouter',
+      modelProvider: 'openai',
       systemInstruction: 'You are a friendly and helpful assistant.',
     },
     required: false,

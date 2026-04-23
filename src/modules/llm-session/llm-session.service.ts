@@ -20,7 +20,11 @@ import {Task} from 'src/modules/task/entities/task.entity';
 import {User} from 'src/modules/user/entity/user.entity';
 import {Repository} from 'typeorm';
 
-import {LLM_PROVIDER_REGISTRY} from './constants/llm-provider-registry.constants';
+import {
+  getDisplayProviderValue,
+  getPublicLlmProviderEntries,
+  resolveLlmProvider,
+} from './constants/llm-provider-registry.constants';
 import {LlmMessage} from './entity/llm-message.entity';
 import {LlmSession} from './entity/llm-session.entity';
 
@@ -35,7 +39,7 @@ export class LlmSessionService {
   ) {}
 
   getProviders() {
-    return Object.values(LLM_PROVIDER_REGISTRY).map(
+    return getPublicLlmProviderEntries().map(
       ({value, label, defaultModel, suggestedModels}) => ({
         value,
         label,
@@ -46,12 +50,16 @@ export class LlmSessionService {
   }
 
   getProviderModels(provider: string) {
-    const providerConfig = LLM_PROVIDER_REGISTRY[provider];
-    if (!providerConfig) {
+    const providerConfig = resolveLlmProvider(provider);
+    if (!providerConfig || !providerConfig.public) {
       throw new NotFoundException('LLM provider not found');
     }
     return {
-      provider: providerConfig.value,
+      provider:
+        getDisplayProviderValue(
+          providerConfig.value,
+          providerConfig.defaultModel,
+        ) ?? providerConfig.value,
       defaultModel: providerConfig.defaultModel,
       suggestedModels: providerConfig.suggestedModels,
     };
@@ -115,7 +123,7 @@ export class LlmSessionService {
     });
 
     const providerName = String(providerConfig.modelProvider);
-    const provider = LLM_PROVIDER_REGISTRY[providerName];
+    const provider = resolveLlmProvider(providerName, String(providerConfig.model || ''));
     if (!provider) {
       throw new ForbiddenException('LLM provider not supported');
     }

@@ -49,4 +49,27 @@ describe('LlmSessionService', () => {
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
+
+  it('should hide openrouter from public provider list', () => {
+    const providers = service.getProviders();
+
+    expect(providers.some((provider) => provider.value === 'openrouter')).toBe(
+      false,
+    );
+    expect(providers.some((provider) => provider.value === 'openai')).toBe(
+      true,
+    );
+    expect(providers.some((provider) => provider.value === 'anthropic')).toBe(
+      true,
+    );
+  });
+
+  it('should return provider models for public aliases', () => {
+    expect(service.getProviderModels('google')).toEqual(
+      expect.objectContaining({
+        provider: 'google',
+        defaultModel: 'google/gemini-2.5-flash',
+      }),
+    );
+  });
 });
