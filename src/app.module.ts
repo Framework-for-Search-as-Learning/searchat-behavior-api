@@ -29,6 +29,8 @@ import {Task} from './modules/task/entities/task.entity';
 import {TaskModule} from './modules/task/task.module';
 import {TaskQuestionMap} from './modules/task-question-map/entity/taskQuestionMap.entity';
 import {TaskQuestionMapModule} from './modules/task-question-map/task-question-map.module';
+import {TaskSurvey} from './modules/task-survey/entity/taskSurvey.entity';
+import {TaskSurveyModule} from './modules/task-survey/task-survey.module';
 import {User} from './modules/user/entity/user.entity';
 import {UserModule} from './modules/user/user.module';
 import {UserExperiment} from './modules/user-experiment/entities/user-experiments.entity';
@@ -73,6 +75,7 @@ import {UserTaskSessionModule} from './modules/user-task-session/user-task-sessi
           UserTask,
           SurveyAnswer,
           TaskQuestionMap,
+          TaskSurvey,
           Icf,
           UserTaskSession,
           Page,
@@ -98,6 +101,7 @@ import {UserTaskSessionModule} from './modules/user-task-session/user-task-sessi
     SurveyModule,
     SurveyAnswerModule,
     TaskQuestionMapModule,
+    TaskSurveyModule,
     IcfModule,
     UserTaskSessionModule,
     LlmSessionModule,

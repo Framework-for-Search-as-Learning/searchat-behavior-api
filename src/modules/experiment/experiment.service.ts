@@ -3,17 +3,26 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import {forwardRef, Inject, Injectable} from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import * as yaml from 'js-yaml';
 import {Repository} from 'typeorm';
 
+import {Icf} from '../icf/entity/icf.entity';
 import {IcfService} from '../icf/icf.service';
 import {QuestionDTO, QuestionType} from '../survey/dto/question.dto';
+import {Survey} from '../survey/entity/survey.entity';
 import {SurveyType} from '../survey/entity/survey.entity';
 import {SurveyService} from '../survey/survey.service';
 import {Task, TaskProviderConfig} from '../task/entities/task.entity';
 import {TaskService} from '../task/task.service';
+import {TaskQuestionMap} from '../task-question-map/entity/taskQuestionMap.entity';
+import {TaskSurvey} from '../task-survey/entity/taskSurvey.entity';
 import {UserService} from '../user/user.service';
 import {UserExperimentService} from '../user-experiment/user-experiment.service';
 import {UserTask} from '../user-task/entities/user-tasks.entity';
@@ -117,61 +126,200 @@ export class ExperimentService {
       name,
       ownerId,
       summary,
-      tasksProps,
-      surveysProps,
+      tasksProps = [],
+      surveysProps = [],
       typeExperiment,
       betweenExperimentType,
       icf,
     } = createExperimentDto;
 
     const owner = await this.userService.findOne(ownerId);
-    const experiment = await this.experimentRepository.create({
-      name,
-      summary,
-      owner_id: ownerId,
-      owner,
-      typeExperiment,
-      betweenExperimentType,
-    });
-    const savedExperiment = await this.experimentRepository.save(experiment);
+    return await this.experimentRepository.manager.transaction(
+      async (manager) => {
+          const savedExperiment = await manager.save(
+            Experiment,
+            manager.create(Experiment, {
+              name,
+              summary,
+              owner_id: ownerId,
+              owner,
+              typeExperiment,
+              betweenExperimentType,
+            }),
+          );
 
-    const SurveysPromises = surveysProps.map((survey) => {
-      return this.surveyService.create({
-        description: survey.description,
-        name: survey.name,
-        title: survey.title,
-        questions: survey.questions,
-        type: survey.type,
-        experimentId: savedExperiment._id,
-        uuid: survey.uuid,
-        uniqueAnswer: survey.uniqueAnswer,
-      });
-    });
-    await Promise.all(SurveysPromises);
+          const createdSurveys = await Promise.all(
+            surveysProps.map((survey) => {
+              const surveyData: Partial<Survey> = {
+                name: survey.name,
+                title: survey.title,
+                description: survey.description,
+                type: survey.type,
+                questions: survey.questions,
+                uniqueAnswer: survey.uniqueAnswer,
+                experiment: savedExperiment,
+              };
 
-    const TasksPromises = tasksProps.map((task) => {
-      return this.taskService.create({
-        title: task.title,
-        summary: task.summary,
-        description: task.description,
-        search_source: task.search_source,
-        survey_id: task.SelectedSurvey,
-        rule_type: task.RulesExperiment,
-        min_score: task.ScoreThreshold,
-        max_score: task.ScoreThresholdmx,
-        questionsId: task.selectedQuestionIds,
-        experiment_id: savedExperiment._id,
-        provider_config: task.provider_config,
-      });
-    });
-    await Promise.all(TasksPromises);
+              if (survey.uuid) {
+                surveyData._id = survey.uuid;
+              }
 
-    await this.icfService.create({
-      title: icf.title,
-      description: icf.description,
-      experimentId: savedExperiment._id,
-    });
-    return savedExperiment;
+              return manager.save(Survey, manager.create(Survey, surveyData));
+            }),
+          );
+
+          const surveyRefToId = new Map<string, string>();
+          const createdSurveyMap = new Map<string, Survey>();
+          createdSurveys.forEach((survey, index) => {
+            surveyRefToId.set(survey._id, survey._id);
+            createdSurveyMap.set(survey._id, survey);
+
+            const originalRef = surveysProps[index]?.uuid;
+            if (originalRef) {
+              surveyRefToId.set(originalRef, survey._id);
+            }
+          });
+
+          const createdTasks = await Promise.all(
+            tasksProps.map(async (task) => {
+              let linkedSurvey: Survey | null = null;
+              if (task.SelectedSurvey) {
+                const selectedSurveyId =
+                  surveyRefToId.get(task.SelectedSurvey) || task.SelectedSurvey;
+
+                linkedSurvey = await manager.findOne(Survey, {
+                  where: {_id: selectedSurveyId},
+                });
+
+                if (!linkedSurvey) {
+                  throw new BadRequestException({
+                    message: 'Invalid SelectedSurvey reference',
+                    taskRef: task.uuid || task.title,
+                    ref: task.SelectedSurvey,
+                  });
+                }
+              }
+
+              const createdTask = await manager.save(
+                Task,
+                manager.create(Task, {
+                  title: task.title,
+                  summary: task.summary,
+                  description: task.description,
+                  search_source: task.search_source,
+                  survey: linkedSurvey,
+                  survey_id: linkedSurvey?._id || null,
+                  rule_type: task.RulesExperiment,
+                  min_score: task.ScoreThreshold || 0,
+                  max_score: task.ScoreThresholdmx || 0,
+                  experiment: savedExperiment,
+                  provider_config: task.provider_config,
+                }),
+              );
+
+              if (task.selectedQuestionIds?.length > 0) {
+                const questionRows = task.selectedQuestionIds.map((questionId) =>
+                  manager.create(TaskQuestionMap, {
+                    task: createdTask,
+                    task_id: createdTask._id,
+                    question_id: questionId,
+                  }),
+                );
+                await manager.save(TaskQuestionMap, questionRows);
+              }
+
+              return {task: createdTask, payload: task};
+            }),
+          );
+
+          const invalidRefs: Array<{
+            taskRef: string;
+            invalidRefs: string[];
+          }> = [];
+          const pairSet = new Set<string>();
+          const rowsToLink: TaskSurvey[] = [];
+
+          createdTasks.forEach(({task, payload}, index) => {
+            const refs = payload.linkedSurveyRefs || [];
+            if (refs.length === 0) {
+              return;
+            }
+
+            const uniqueRefs = [...new Set(refs)];
+            const unresolvedRefs = uniqueRefs.filter(
+              (ref) => !surveyRefToId.has(ref),
+            );
+
+            if (unresolvedRefs.length > 0) {
+              invalidRefs.push({
+                taskRef: payload.uuid || payload.title || `task_${index + 1}`,
+                invalidRefs: unresolvedRefs,
+              });
+              return;
+            }
+
+            uniqueRefs.forEach((ref) => {
+              const surveyId = surveyRefToId.get(ref);
+              const survey = surveyId ? createdSurveyMap.get(surveyId) : undefined;
+              if (!surveyId || !survey) {
+                invalidRefs.push({
+                  taskRef: payload.uuid || payload.title || `task_${index + 1}`,
+                  invalidRefs: [ref],
+                });
+                return;
+              }
+
+              const pairKey = `${task._id}:${surveyId}`;
+              if (pairSet.has(pairKey)) {
+                return;
+              }
+
+              pairSet.add(pairKey);
+              rowsToLink.push(
+                manager.create(TaskSurvey, {
+                  task,
+                  task_id: task._id,
+                  survey,
+                  survey_id: surveyId,
+                }),
+              );
+            });
+          });
+
+          if (invalidRefs.length > 0) {
+            throw new BadRequestException({
+              message: 'Invalid survey references in tasksProps.linkedSurveyRefs',
+              details: invalidRefs,
+            });
+          }
+
+          if (rowsToLink.length > 0) {
+            await manager
+              .createQueryBuilder()
+              .insert()
+              .into(TaskSurvey)
+              .values(
+                rowsToLink.map((row) => ({
+                  task_id: row.task_id,
+                  survey_id: row.survey_id,
+                })),
+              )
+              .orIgnore()
+              .execute();
+          }
+
+          await manager.save(
+            Icf,
+            manager.create(Icf, {
+              title: icf.title,
+              description: icf.description,
+              experiment: savedExperiment,
+            }),
+          );
+
+          return savedExperiment;
+      },
+    );
   }
 
   async findAll(): Promise<Experiment[]> {

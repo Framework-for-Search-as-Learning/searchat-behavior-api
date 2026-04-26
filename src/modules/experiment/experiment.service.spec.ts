@@ -3,6 +3,7 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
+import {BadRequestException} from '@nestjs/common';
 import type {TestingModule} from '@nestjs/testing';
 import {Test} from '@nestjs/testing';
 import {getRepositoryToken} from '@nestjs/typeorm';
@@ -33,6 +34,9 @@ describe('ExperimentService', () => {
     save: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
+    manager: {
+      transaction: jest.Mock;
+    };
   };
   let mockExperimentQueryBuilder: {
     leftJoinAndSelect: jest.Mock;
@@ -63,6 +67,19 @@ describe('ExperimentService', () => {
   let mockIcfService: {
     create: jest.Mock;
   };
+  let mockTransactionManager: {
+    create: jest.Mock;
+    save: jest.Mock;
+    findOne: jest.Mock;
+    createQueryBuilder: jest.Mock;
+  };
+  let mockTaskSurveyInsertBuilder: {
+    insert: jest.Mock;
+    into: jest.Mock;
+    values: jest.Mock;
+    orIgnore: jest.Mock;
+    execute: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockExperimentRepository = {
@@ -74,7 +91,29 @@ describe('ExperimentService', () => {
       save: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      manager: {
+        transaction: jest.fn(),
+      },
     };
+
+    mockTaskSurveyInsertBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn(),
+    };
+
+    mockTransactionManager = {
+      create: jest.fn((_, entity) => entity),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      createQueryBuilder: jest.fn(() => mockTaskSurveyInsertBuilder),
+    };
+
+    mockExperimentRepository.manager.transaction.mockImplementation(
+      async (callback) => callback(mockTransactionManager),
+    );
     mockExperimentQueryBuilder = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -152,7 +191,75 @@ describe('ExperimentService', () => {
   });
 
   describe('create', () => {
-    it('should create an experiment with surveys, tasks, and icf', async () => {
+    it('should create an experiment with surveys, tasks, linked task-survey rows, and icf', async () => {
+      const createExperimentDto: CreateExperimentDto = {
+        name: 'Test Experiment',
+        ownerId: 'owner-1',
+        summary: 'Test Summary',
+        tasksProps: [
+          {
+            uuid: 'task-temp-1',
+            title: 'Task 1',
+            summary: 'Task Summary',
+            description: 'Task Description',
+            search_source: 'search-engine',
+            SelectedSurvey: 'survey-1',
+            RulesExperiment: 'score',
+            ScoreThreshold: 0,
+            ScoreThresholdmx: 100,
+            selectedQuestionIds: [],
+            provider_config: {},
+            linkedSurveyRefs: ['survey-1', 'survey-1'],
+          },
+        ],
+        surveysProps: [
+          {
+            name: 'Survey 1',
+            title: 'Survey Title',
+            description: 'Survey Description',
+            questions: [],
+            type: SurveyType.PRE,
+            uuid: 'uuid-1',
+            uniqueAnswer: false,
+            experimentId: 'exp-1',
+          },
+        ],
+        typeExperiment: 'within-subject',
+        betweenExperimentType: null,
+        icf: {title: 'ICF Title', description: 'ICF Description'},
+      };
+
+      const mockUser = {_id: 'owner-1', name: 'Owner'};
+      const savedExperiment = {_id: 'exp-1', name: 'Test Experiment'};
+      const savedSurvey = {_id: 'survey-1'};
+      const savedTask = {_id: 'task-1'};
+
+      mockUserService.findOne.mockResolvedValue(mockUser);
+      mockTransactionManager.findOne.mockResolvedValue(savedSurvey);
+      mockTransactionManager.save.mockImplementation(async (entity, payload) => {
+        if (entity === Experiment) {
+          return savedExperiment;
+        }
+        if (payload?.title === 'Task 1') {
+          return savedTask;
+        }
+        if (payload?.name === 'Survey 1') {
+          return savedSurvey;
+        }
+        return payload;
+      });
+      mockTaskSurveyInsertBuilder.execute.mockResolvedValue({});
+
+      const result = await service.create(createExperimentDto);
+
+      expect(mockUserService.findOne).toHaveBeenCalledWith('owner-1');
+      expect(mockExperimentRepository.manager.transaction).toHaveBeenCalled();
+      expect(mockTaskSurveyInsertBuilder.values).toHaveBeenCalled();
+      expect(mockTaskSurveyInsertBuilder.orIgnore).toHaveBeenCalled();
+      expect(result).toEqual(savedExperiment);
+    });
+
+    it('should keep backward compatibility when linkedSurveyRefs is not provided', async () => {
       const createExperimentDto: CreateExperimentDto = {
         name: 'Test Experiment',
         ownerId: 'owner-1',
@@ -178,7 +285,7 @@ describe('ExperimentService', () => {
             description: 'Survey Description',
             questions: [],
             type: SurveyType.PRE,
-            uuid: 'uuid-1',
+            uuid: 'survey-1',
             uniqueAnswer: false,
             experimentId: 'exp-1',
           },
@@ -188,24 +295,82 @@ describe('ExperimentService', () => {
         icf: {title: 'ICF Title', description: 'ICF Description'},
       };
 
-      const mockUser = {_id: 'owner-1', name: 'Owner'};
-      const savedExperiment = {_id: 'exp-1', ...createExperimentDto};
+      const savedExperiment = {_id: 'exp-1', name: 'Test Experiment'};
+      const savedSurvey = {_id: 'survey-1'};
 
-      mockUserService.findOne.mockResolvedValue(mockUser);
-      mockExperimentRepository.create.mockReturnValue(savedExperiment);
-      mockExperimentRepository.save.mockResolvedValue(savedExperiment);
-      mockSurveyService.create.mockResolvedValue({_id: 'survey-1'});
-      mockTaskService.create.mockResolvedValue({_id: 'task-1'});
-      mockIcfService.create.mockResolvedValue({_id: 'icf-1'});
+      mockUserService.findOne.mockResolvedValue({_id: 'owner-1'});
+      mockTransactionManager.findOne.mockResolvedValue(savedSurvey);
+      mockTransactionManager.save.mockImplementation(async (entity, payload) => {
+        if (entity === Experiment) {
+          return savedExperiment;
+        }
+        if (payload?.name === 'Survey 1') {
+          return savedSurvey;
+        }
+        return payload;
+      });
 
       const result = await service.create(createExperimentDto);
 
-      expect(mockUserService.findOne).toHaveBeenCalledWith('owner-1');
-      expect(mockExperimentRepository.save).toHaveBeenCalled();
-      expect(mockSurveyService.create).toHaveBeenCalled();
-      expect(mockTaskService.create).toHaveBeenCalled();
-      expect(mockIcfService.create).toHaveBeenCalled();
+      expect(mockTaskSurveyInsertBuilder.execute).not.toHaveBeenCalled();
       expect(result).toEqual(savedExperiment);
+    });
+
+    it('should throw 400 when linkedSurveyRefs contains invalid refs', async () => {
+      const createExperimentDto: CreateExperimentDto = {
+        name: 'Test Experiment',
+        ownerId: 'owner-1',
+        summary: 'Test Summary',
+        tasksProps: [
+          {
+            uuid: 'task-temp-1',
+            title: 'Task 1',
+            summary: 'Task Summary',
+            description: 'Task Description',
+            search_source: 'search-engine',
+            RulesExperiment: 'score',
+            ScoreThreshold: 0,
+            ScoreThresholdmx: 100,
+            selectedQuestionIds: [],
+            provider_config: {},
+            linkedSurveyRefs: ['missing-ref'],
+          },
+        ],
+        surveysProps: [
+          {
+            name: 'Survey 1',
+            title: 'Survey Title',
+            description: 'Survey Description',
+            questions: [],
+            type: SurveyType.PRE,
+            uuid: 'survey-1',
+            uniqueAnswer: false,
+            experimentId: 'exp-1',
+          },
+        ],
+        typeExperiment: 'within-subject',
+        betweenExperimentType: null,
+        icf: {title: 'ICF Title', description: 'ICF Description'},
+      };
+
+      mockUserService.findOne.mockResolvedValue({_id: 'owner-1'});
+      mockTransactionManager.save.mockImplementation(async (entity, payload) => {
+        if (entity === Experiment) {
+          return {_id: 'exp-1'};
+        }
+        if (payload?.name === 'Survey 1') {
+          return {_id: 'survey-1'};
+        }
+        if (payload?.title === 'Task 1') {
+          return {_id: 'task-1'};
+        }
+        return payload;
+      });
+
+      await expect(service.create(createExperimentDto)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(mockTaskSurveyInsertBuilder.execute).not.toHaveBeenCalled();
     });
   });
 

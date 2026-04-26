@@ -8,6 +8,7 @@ import {Experiment} from 'src/modules/experiment/entity/experiment.entity';
 import {LlmSession} from 'src/modules/llm-session/entity/llm-session.entity';
 import {Survey} from 'src/modules/survey/entity/survey.entity';
 import {TaskQuestionMap} from 'src/modules/task-question-map/entity/taskQuestionMap.entity';
+import {TaskSurvey} from 'src/modules/task-survey/entity/taskSurvey.entity';
 import {UserTask} from 'src/modules/user-task/entities/user-tasks.entity';
 import {UserTaskSession} from 'src/modules/user-task-session/entities/user-task-session.entity';
 import {Column, Entity, ManyToOne, OneToMany} from 'typeorm';
@@ -78,4 +79,7 @@ export class Task extends BaseEntity {
 
   @OneToMany(() => UserTaskSession, (session) => session.task)
   sessions: UserTaskSession[];
+
+  @OneToMany(() => TaskSurvey, (taskSurvey) => taskSurvey.task, {cascade: true})
+  taskSurveys: TaskSurvey[];
 }
