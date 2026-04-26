@@ -7,13 +7,16 @@ import {ApiProperty} from '@nestjs/swagger';
 import {Type} from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { CreateSurveyDto } from 'src/modules/survey/dto/create-survey.dto';
+import {QuestionDTO} from 'src/modules/survey/dto/question.dto';
+import {SurveyType} from 'src/modules/survey/entity/survey.entity';
 
 export class CreateExperimentTaskPropsDto {
   @ApiProperty({description: 'Temporary task reference', required: false})
@@ -93,6 +96,51 @@ export class CreateExperimentIcfDto {
   description: string;
 }
 
+export class CreateExperimentSurveyPropsDto {
+  @ApiProperty({description: 'Temporary survey reference', required: false})
+  @IsOptional()
+  @IsString()
+  uuid?: string;
+
+  @ApiProperty({description: 'Internal survey name', example: 'survey-name'})
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiProperty({description: 'Survey title', example: 'Survey title'})
+  @IsNotEmpty()
+  @IsString()
+  title: string;
+
+  @ApiProperty({description: 'Survey description', example: 'Survey description'})
+  @IsNotEmpty()
+  @IsString()
+  description: string;
+
+  @ApiProperty({enum: SurveyType, description: 'Survey type'})
+  @IsEnum(SurveyType)
+  type: SurveyType;
+
+  @ApiProperty({type: [QuestionDTO], description: 'Survey questions'})
+  @IsArray()
+  @ValidateNested({each: true})
+  @Type(() => QuestionDTO)
+  questions: QuestionDTO[];
+
+  @ApiProperty({description: 'Whether survey answers must be unique', example: false})
+  @IsNotEmpty()
+  @IsBoolean()
+  uniqueAnswer: boolean;
+
+  @ApiProperty({
+    description: 'Deprecated on POST /experiment and ignored when provided',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  experimentId?: string;
+}
+
 export class CreateExperimentDto {
   @ApiProperty({ description: 'Experiment name', example: 'Bias Study A' })
   @IsNotEmpty()
@@ -139,7 +187,7 @@ export class CreateExperimentDto {
   tasksProps: CreateExperimentTaskPropsDto[];
   @ApiProperty({
     description: 'Survey definitions used in the experiment',
-    type: [CreateSurveyDto],
+    type: [CreateExperimentSurveyPropsDto],
     example: [
       {
         uuid: 'survey-temp-1',
@@ -154,8 +202,8 @@ export class CreateExperimentDto {
   })
   @IsArray()
   @ValidateNested({each: true})
-  @Type(() => CreateSurveyDto)
-  surveysProps: CreateSurveyDto[];
+  @Type(() => CreateExperimentSurveyPropsDto)
+  surveysProps: CreateExperimentSurveyPropsDto[];
 
   @ApiProperty({
     description: 'ICF (consent) information',

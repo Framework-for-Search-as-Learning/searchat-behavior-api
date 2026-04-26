@@ -259,7 +259,7 @@ describe('ExperimentService', () => {
       expect(result).toEqual(savedExperiment);
     });
 
-    it('should keep backward compatibility when linkedSurveyRefs is not provided', async () => {
+    it('should keep backward compatibility by linking task_survey from SelectedSurvey when linkedSurveyRefs is not provided', async () => {
       const createExperimentDto: CreateExperimentDto = {
         name: 'Test Experiment',
         ownerId: 'owner-1',
@@ -306,6 +306,69 @@ describe('ExperimentService', () => {
         }
         if (payload?.name === 'Survey 1') {
           return savedSurvey;
+        }
+        return payload;
+      });
+
+      mockTaskSurveyInsertBuilder.execute.mockResolvedValue({});
+
+      const result = await service.create(createExperimentDto);
+
+      expect(mockTaskSurveyInsertBuilder.values).toHaveBeenCalledWith([
+        expect.objectContaining({survey_id: 'survey-1'}),
+      ]);
+      expect(mockTaskSurveyInsertBuilder.execute).toHaveBeenCalled();
+      expect(result).toEqual(savedExperiment);
+    });
+
+    it('should keep behavior unchanged when no linked survey fields are provided', async () => {
+      const createExperimentDto: CreateExperimentDto = {
+        name: 'Test Experiment',
+        ownerId: 'owner-1',
+        summary: 'Test Summary',
+        tasksProps: [
+          {
+            title: 'Task 1',
+            summary: 'Task Summary',
+            description: 'Task Description',
+            search_source: 'search-engine',
+            RulesExperiment: 'score',
+            ScoreThreshold: 0,
+            ScoreThresholdmx: 100,
+            selectedQuestionIds: [],
+            provider_config: {},
+          },
+        ],
+        surveysProps: [
+          {
+            name: 'Survey 1',
+            title: 'Survey Title',
+            description: 'Survey Description',
+            questions: [],
+            type: SurveyType.PRE,
+            uuid: 'survey-1',
+            uniqueAnswer: false,
+            experimentId: 'exp-1',
+          },
+        ],
+        typeExperiment: 'within-subject',
+        betweenExperimentType: null,
+        icf: {title: 'ICF Title', description: 'ICF Description'},
+      };
+
+      const savedExperiment = {_id: 'exp-1', name: 'Test Experiment'};
+      const savedSurvey = {_id: 'survey-1'};
+
+      mockUserService.findOne.mockResolvedValue({_id: 'owner-1'});
+      mockTransactionManager.save.mockImplementation(async (entity, payload) => {
+        if (entity === Experiment) {
+          return savedExperiment;
+        }
+        if (payload?.name === 'Survey 1') {
+          return savedSurvey;
+        }
+        if (payload?.title === 'Task 1') {
+          return {_id: 'task-1'};
         }
         return payload;
       });

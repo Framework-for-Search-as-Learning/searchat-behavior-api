@@ -245,12 +245,23 @@ export class UserTaskService {
   ): Promise<UserTask[]> {
     const userTasks = await this.userTaskRepository.find({
       where: { user_id: userId },
-      relations: ['task'],
+      relations: ['task', 'task.taskSurveys'],
     });
     const userTaskByExperiment = userTasks.filter(
       (userTask) => userTask.task.experiment_id === experimentId,
     );
-    return userTaskByExperiment;
+    return userTaskByExperiment.map((ut) => {
+      const {taskSurveys, ...taskRest} = ut.task as any;
+      const surveyIds: string[] = (taskSurveys ?? []).map((ts: any) => ts.survey_id);
+      return {
+        ...ut,
+        task: {
+          ...taskRest,
+          // undefined when no linked surveys → frontend shows all surveys (backward compat)
+          ...(surveyIds.length > 0 && {linkedSurveyRefs: surveyIds}),
+        },
+      };
+    }) as unknown as UserTask[];
   }
 
   async findUsersByTaskId(taskId: string): Promise<User[]> {

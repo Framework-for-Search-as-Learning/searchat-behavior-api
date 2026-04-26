@@ -240,7 +240,10 @@ export class ExperimentService {
           const rowsToLink: TaskSurvey[] = [];
 
           createdTasks.forEach(({task, payload}, index) => {
-            const refs = payload.linkedSurveyRefs || [];
+            const refs = [
+              ...(payload.linkedSurveyRefs || []),
+              ...(payload.SelectedSurvey ? [payload.SelectedSurvey] : []),
+            ];
             if (refs.length === 0) {
               return;
             }

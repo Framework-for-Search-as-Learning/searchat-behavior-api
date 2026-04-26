@@ -9,6 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ExperimentModule } from '../experiment/experiment.module';
 import { SurveyModule } from '../survey/survey.module';
 import { TaskQuestionMapModule } from '../task-question-map/task-question-map.module';
+import { TaskSurveyModule } from '../task-survey/task-survey.module';
 import { Task } from './entities/task.entity';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
@@ -19,6 +20,7 @@ import { TaskService } from './task.service';
     forwardRef(() => ExperimentModule),
     forwardRef(() => SurveyModule),
     forwardRef(() => TaskQuestionMapModule),
+    forwardRef(() => TaskSurveyModule),
   ],
   providers: [TaskService],
   controllers: [TaskController],

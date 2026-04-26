@@ -15,6 +15,7 @@ import { In, Repository } from 'typeorm';
 import { ExperimentService } from '../experiment/experiment.service';
 import { SurveyService } from '../survey/survey.service';
 import { TaskQuestionMapService } from '../task-question-map/task-question-map.service';
+import { TaskSurveyService } from '../task-survey/task-survey.service';
 import { getDisplayProviderValue } from '../llm-session/constants/llm-provider-registry.constants';
 import { PROVIDER_CONFIG_SECRET_KEYS } from './constants/provider-config.constants';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -37,6 +38,8 @@ export class TaskService {
     private readonly surveyService: SurveyService,
     @Inject(forwardRef(() => TaskQuestionMapService))
     private readonly taskQuestionMapService: TaskQuestionMapService,
+    @Inject(forwardRef(() => TaskSurveyService))
+    private readonly taskSurveyService: TaskSurveyService,
   ) { }
 
   private normalizeProviderConfigForOutput(
@@ -175,6 +178,11 @@ export class TaskService {
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<TaskWithProviderMask> {
+    const dto = updateTaskDto as any;
+    const hasLinkedSurveyRefs = 'linkedSurveyRefs' in dto;
+    const linkedSurveyRefs: string[] = dto.linkedSurveyRefs ?? [];
+    delete dto.linkedSurveyRefs;
+
     const oldTask = await this.findOne(id);
     if (
       updateTaskDto.survey_id &&
@@ -194,6 +202,21 @@ export class TaskService {
       );
     }
     delete updateTaskDto.questionsId;
+
+    if (hasLinkedSurveyRefs) {
+      const currentSurveys = await this.taskSurveyService.findSurveysByTask(id);
+      const currentIds = new Set(currentSurveys.map((s) => s._id));
+      const newIds = new Set([...new Set(linkedSurveyRefs)]);
+
+      await Promise.all([
+        ...[...newIds].filter((ref) => !currentIds.has(ref)).map((ref) =>
+          this.taskSurveyService.link(id, ref).catch(() => null),
+        ),
+        ...[...currentIds].filter((ref) => !newIds.has(ref)).map((ref) =>
+          this.taskSurveyService.unlink(id, ref).catch(() => null),
+        ),
+      ]);
+    }
 
     if (updateTaskDto.provider_config) {
       const current = await this.taskRepository.findOne({
