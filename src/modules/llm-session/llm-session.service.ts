@@ -118,9 +118,10 @@ export class LlmSessionService {
 
     const history = await this.llmMessageRepository.find({
       where: {session: {id: sessionId}},
-      order: {createdAt: 'ASC'},
+      order: {createdAt: 'DESC'},
       take: 20,
     });
+    history.reverse();
 
     const providerName = String(providerConfig.modelProvider);
     const provider = resolveLlmProvider(providerName, String(providerConfig.model || ''));
@@ -146,7 +147,7 @@ export class LlmSessionService {
     const model = new ChatOpenAI({
       apiKey: String(providerConfig.apiKey),
       model: String(providerConfig.model || provider.defaultModel),
-      temperature: Number(providerConfig.temperature ?? 0.7),
+      temperature: Number(providerConfig.temperature ?? 0.5),
       streaming: true,
       configuration: baseURL
         ? {
