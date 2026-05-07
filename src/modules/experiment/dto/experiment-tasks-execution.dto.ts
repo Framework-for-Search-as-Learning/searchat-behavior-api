@@ -13,6 +13,12 @@ export class ExperimentTaskExecutionDto {
   @ApiProperty()
   taskTitle: string;
 
+  @ApiProperty()
+  taskType: string;
+
+  @ApiProperty({ nullable: true, required: false })
+  systemInstruction?: string | null;
+
   @ApiProperty({ type: [TaskExecutionDetailsDto] })
   executions: TaskExecutionDetailsDto[];
 }

@@ -3,19 +3,30 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import { Content, GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  AIMessage,
+  BaseMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
+import {ChatOpenAI} from '@langchain/openai';
 import {
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Task } from 'src/modules/task/entities/task.entity';
-import { User } from 'src/modules/user/entity/user.entity';
-import { Repository } from 'typeorm';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Task} from 'src/modules/task/entities/task.entity';
+import {User} from 'src/modules/user/entity/user.entity';
+import {Repository} from 'typeorm';
 
-import { LlmMessage } from './entity/llm-message.entity';
-import { LlmSession } from './entity/llm-session.entity';
+import {
+  getDisplayProviderValue,
+  getPublicLlmProviderEntries,
+  resolveLlmProvider,
+} from './constants/llm-provider-registry.constants';
+import {LlmMessage} from './entity/llm-message.entity';
+import {LlmSession} from './entity/llm-session.entity';
 
 @Injectable()
 export class LlmSessionService {
@@ -25,48 +36,72 @@ export class LlmSessionService {
     @InjectRepository(LlmMessage)
     private readonly llmMessageRepository: Repository<LlmMessage>,
     @InjectRepository(Task) private readonly taskRepository: Repository<Task>,
-  ) { }
+  ) {}
+
+  getProviders() {
+    return getPublicLlmProviderEntries().map(
+      ({value, label, defaultModel, suggestedModels}) => ({
+        value,
+        label,
+        defaultModel,
+        suggestedModels,
+      }),
+    );
+  }
+
+  getProviderModels(provider: string) {
+    const providerConfig = resolveLlmProvider(provider);
+    if (!providerConfig || !providerConfig.public) {
+      throw new NotFoundException('LLM provider not found');
+    }
+    return {
+      provider:
+        getDisplayProviderValue(
+          providerConfig.value,
+          providerConfig.defaultModel,
+        ) ?? providerConfig.value,
+      defaultModel: providerConfig.defaultModel,
+      suggestedModels: providerConfig.suggestedModels,
+    };
+  }
 
   async startSession(userId: string, taskId: string): Promise<LlmSession> {
     const existingSession = await this.llmSessionRepository.findOne({
-      where: { user: { _id: userId }, task: { _id: taskId } },
+      where: {user: {_id: userId}, task: {_id: taskId}},
       relations: ['messages'],
-      order: { messages: { createdAt: 'ASC' } },
+      order: {messages: {createdAt: 'ASC'}},
     });
 
     if (existingSession) {
       return existingSession;
     }
 
-    const task = await this.taskRepository.findOne({ where: { _id: taskId } });
+    const task = await this.taskRepository
+      .createQueryBuilder('task')
+      .addSelect('task.provider_config')
+      .where('task._id = :taskId', {taskId})
+      .getOne();
     if (!task) {
       throw new NotFoundException('Task not found');
     }
 
     const newSession = this.llmSessionRepository.create({
-      user: { _id: userId } as User,
+      user: {_id: userId} as User,
       task: task,
+      systemInstruction: task.provider_config?.systemInstruction ?? null,
     });
 
     return await this.llmSessionRepository.save(newSession);
   }
 
   async processChatMessage(sessionId: string, userId: string, content: string) {
-    const session = await this.llmSessionRepository.findOne({
-      where: { id: sessionId },
-      relations: ['task', 'user'],
-      select: {
-        id: true,
-        task: {
-          _id: true,
-          provider_config: {
-            apiKey: true,
-            modelProvider: true,
-            model: true,
-          },
-        },
-      },
-    });
+    const session = await this.llmSessionRepository
+      .createQueryBuilder('session')
+      .leftJoinAndSelect('session.task', 'task')
+      .leftJoinAndSelect('session.user', 'user')
+      .addSelect('task.provider_config')
+      .where('session.id = :sessionId', {sessionId})
+      .getOne();
     if (!session) throw new NotFoundException('Session not found');
     if (session.user._id !== userId)
       throw new ForbiddenException('Session does not belong to user');
@@ -82,30 +117,51 @@ export class LlmSessionService {
     });
 
     const history = await this.llmMessageRepository.find({
-      where: { session: { id: sessionId } },
-      order: { createdAt: 'ASC' },
+      where: {session: {id: sessionId}},
+      order: {createdAt: 'DESC'},
       take: 20,
     });
+    history.reverse();
 
-    const historyForAi: Content[] = history.slice(0, -1).map((msg) => ({
-      role: msg.role,
-      parts: [{ text: msg.content }],
-    }));
-
-    if (!['google'].includes(providerConfig.modelProvider)) {
+    const providerName = String(providerConfig.modelProvider);
+    const provider = resolveLlmProvider(providerName, String(providerConfig.model || ''));
+    if (!provider) {
       throw new ForbiddenException('LLM provider not supported');
     }
 
-    const modelName = providerConfig.model || 'gemini-2.5-flash';
-    const genAI = new GoogleGenerativeAI(providerConfig.apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
-    const chat = model.startChat({ history: historyForAi });
+    const messages: BaseMessage[] = [];
+    if (providerConfig.systemInstruction) {
+      messages.push(
+        new SystemMessage(String(providerConfig.systemInstruction)),
+      );
+    }
+    messages.push(
+      ...history.map((msg) =>
+        msg.role === 'user'
+          ? new HumanMessage(msg.content)
+          : new AIMessage(msg.content),
+      ),
+    );
+
+    const baseURL = providerConfig.baseURL || provider.baseURL;
+    const model = new ChatOpenAI({
+      apiKey: String(providerConfig.apiKey),
+      model: String(providerConfig.model || provider.defaultModel),
+      temperature: Number(providerConfig.temperature ?? 0.5),
+      streaming: true,
+      configuration: baseURL
+        ? {
+            baseURL: String(baseURL),
+            defaultHeaders: provider.defaultHeaders,
+          }
+        : undefined,
+    });
 
     try {
-      const result = await chat.sendMessageStream(content);
+      const stream = await model.stream(messages);
 
       return {
-        stream: result.stream,
+        stream: this.toTextChunkStream(stream),
         saveBotResponse: async (fulltext: string) => {
           await this.llmMessageRepository.save({
             content: fulltext,
@@ -115,18 +171,50 @@ export class LlmSessionService {
         },
       };
     } catch (error) {
-      console.error('Error Gemini:', error);
-      throw new Error('Error processing Gemini AI response', {cause: error});
+      console.error('Error LangChain:', error);
+      throw new Error('Error processing LLM response', {cause: error});
     }
   }
 
-  async findByUserIdAndTaskId(userId: string, taskId: string): Promise<LlmSession> {
+  private async *toTextChunkStream(stream: AsyncIterable<unknown>) {
+    for await (const chunk of stream) {
+      yield {
+        text: () => this.extractTextFromChunk(chunk),
+      };
+    }
+  }
+
+  private extractTextFromChunk(chunk: unknown): string {
+    const content = (chunk as {content?: unknown}).content;
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (Array.isArray(content)) {
+      return content
+        .map((part) => {
+          if (typeof part === 'string') {
+            return part;
+          }
+          if (part && typeof part === 'object' && 'text' in part) {
+            return String((part as {text: unknown}).text);
+          }
+          return '';
+        })
+        .join('');
+    }
+    return '';
+  }
+
+  async findByUserIdAndTaskId(
+    userId: string,
+    taskId: string,
+  ): Promise<LlmSession> {
     return await this.llmSessionRepository.findOne({
       where: {
-        user: { _id: userId },
-        task: { _id: taskId }
+        user: {_id: userId},
+        task: {_id: taskId},
       },
-      relations: ['messages']
+      relations: ['messages'],
     });
   }
 }

@@ -6,6 +6,7 @@
 import { Task } from 'src/modules/task/entities/task.entity';
 import { User } from 'src/modules/user/entity/user.entity';
 import {
+  Column,
   Entity,
   ManyToOne,
   OneToMany,
@@ -24,6 +25,9 @@ export class LlmSession {
 
   @ManyToOne(() => Task, (task) => task.llmSessions, { onDelete: 'CASCADE' })
   task: Task;
+
+  @Column({ nullable: true, type: 'text' })
+  systemInstruction?: string | null;
 
   @OneToMany(() => LlmMessage, (msg) => msg.session, { cascade: true })
   messages: LlmMessage[];

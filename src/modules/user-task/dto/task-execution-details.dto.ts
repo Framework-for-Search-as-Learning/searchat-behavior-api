@@ -59,6 +59,8 @@ export class LlmMessageDetailsDto {
 }
 
 export class LlmTaskDetailsDto {
+  @ApiProperty({ nullable: true, required: false, description: 'System instruction configured for the LLM task' })
+  systemInstruction?: string | null;
 
   @ApiProperty({ type: [LlmMessageDetailsDto], description: 'Messages exchanged with the model' })
   messages: LlmMessageDetailsDto[];

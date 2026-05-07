@@ -3,20 +3,29 @@
  * Licensed under The MIT License [see LICENSE for details]
  */
 
-import {forwardRef, Inject, Injectable} from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import * as yaml from 'js-yaml';
 import {Repository} from 'typeorm';
 
+import {Icf} from '../icf/entity/icf.entity';
 import {IcfService} from '../icf/icf.service';
-import { QuestionDTO, QuestionType } from '../survey/dto/question.dto';
-import { SurveyType } from '../survey/entity/survey.entity';
+import {QuestionDTO, QuestionType} from '../survey/dto/question.dto';
+import {Survey} from '../survey/entity/survey.entity';
+import {SurveyType} from '../survey/entity/survey.entity';
 import {SurveyService} from '../survey/survey.service';
-import { Task } from '../task/entities/task.entity';
+import {Task, TaskProviderConfig} from '../task/entities/task.entity';
 import {TaskService} from '../task/task.service';
+import {TaskQuestionMap} from '../task-question-map/entity/taskQuestionMap.entity';
+import {TaskSurvey} from '../task-survey/entity/taskSurvey.entity';
 import {UserService} from '../user/user.service';
 import {UserExperimentService} from '../user-experiment/user-experiment.service';
-import { UserTask } from '../user-task/entities/user-tasks.entity';
+import {UserTask} from '../user-task/entities/user-tasks.entity';
 import {UserTaskService} from '../user-task/user-task.service';
 import {CreateExperimentDto} from './dto/create-experiment.dto';
 import {ExperimentParticipantDto} from './dto/experiment-participant.dto';
@@ -61,6 +70,9 @@ type YamlTask = {
   max_score?: number;
   min_score?: number;
   search_source?: string;
+  search_model?: string;
+  systemInstruction?: string;
+  provider_config?: TaskProviderConfig;
   survey_id?: string | null;
 };
 
@@ -114,61 +126,203 @@ export class ExperimentService {
       name,
       ownerId,
       summary,
-      tasksProps,
-      surveysProps,
+      tasksProps = [],
+      surveysProps = [],
       typeExperiment,
       betweenExperimentType,
       icf,
     } = createExperimentDto;
 
     const owner = await this.userService.findOne(ownerId);
-    const experiment = await this.experimentRepository.create({
-      name,
-      summary,
-      owner_id: ownerId,
-      owner,
-      typeExperiment,
-      betweenExperimentType,
-    });
-    const savedExperiment = await this.experimentRepository.save(experiment);
+    return await this.experimentRepository.manager.transaction(
+      async (manager) => {
+          const savedExperiment = await manager.save(
+            Experiment,
+            manager.create(Experiment, {
+              name,
+              summary,
+              owner_id: ownerId,
+              owner,
+              typeExperiment,
+              betweenExperimentType,
+            }),
+          );
 
-    const SurveysPromises = surveysProps.map((survey) => {
-      return this.surveyService.create({
-        description: survey.description,
-        name: survey.name,
-        title: survey.title,
-        questions: survey.questions,
-        type: survey.type,
-        experimentId: savedExperiment._id,
-        uuid: survey.uuid,
-        uniqueAnswer: survey.uniqueAnswer,
-      });
-    });
-    await Promise.all(SurveysPromises);
+          const createdSurveys = await Promise.all(
+            surveysProps.map((survey) => {
+              const surveyData: Partial<Survey> = {
+                name: survey.name,
+                title: survey.title,
+                description: survey.description,
+                type: survey.type,
+                questions: survey.questions,
+                uniqueAnswer: survey.uniqueAnswer,
+                experiment: savedExperiment,
+              };
 
-    const TasksPromises = tasksProps.map((task) => {
-      return this.taskService.create({
-        title: task.title,
-        summary: task.summary,
-        description: task.description,
-        search_source: task.search_source,
-        survey_id: task.SelectedSurvey,
-        rule_type: task.RulesExperiment,
-        min_score: task.ScoreThreshold,
-        max_score: task.ScoreThresholdmx,
-        questionsId: task.selectedQuestionIds,
-        experiment_id: savedExperiment._id,
-        provider_config: task.provider_config,
-      });
-    });
-    await Promise.all(TasksPromises);
+              if (survey.uuid) {
+                surveyData._id = survey.uuid;
+              }
 
-    await this.icfService.create({
-      title: icf.title,
-      description: icf.description,
-      experimentId: savedExperiment._id,
-    });
-    return savedExperiment;
+              return manager.save(Survey, manager.create(Survey, surveyData));
+            }),
+          );
+
+          const surveyRefToId = new Map<string, string>();
+          const createdSurveyMap = new Map<string, Survey>();
+          createdSurveys.forEach((survey, index) => {
+            surveyRefToId.set(survey._id, survey._id);
+            createdSurveyMap.set(survey._id, survey);
+
+            const originalRef = surveysProps[index]?.uuid;
+            if (originalRef) {
+              surveyRefToId.set(originalRef, survey._id);
+            }
+          });
+
+          const createdTasks = await Promise.all(
+            tasksProps.map(async (task) => {
+              let linkedSurvey: Survey | null = null;
+              if (task.SelectedSurvey) {
+                const selectedSurveyId =
+                  surveyRefToId.get(task.SelectedSurvey) || task.SelectedSurvey;
+
+                linkedSurvey = await manager.findOne(Survey, {
+                  where: {_id: selectedSurveyId},
+                });
+
+                if (!linkedSurvey) {
+                  throw new BadRequestException({
+                    message: 'Invalid SelectedSurvey reference',
+                    taskRef: task.uuid || task.title,
+                    ref: task.SelectedSurvey,
+                  });
+                }
+              }
+
+              const createdTask = await manager.save(
+                Task,
+                manager.create(Task, {
+                  title: task.title,
+                  summary: task.summary,
+                  description: task.description,
+                  search_source: task.search_source,
+                  survey: linkedSurvey,
+                  survey_id: linkedSurvey?._id || null,
+                  rule_type: task.RulesExperiment,
+                  min_score: task.ScoreThreshold || 0,
+                  max_score: task.ScoreThresholdmx || 0,
+                  experiment: savedExperiment,
+                  provider_config: task.provider_config,
+                }),
+              );
+
+              if (task.selectedQuestionIds?.length > 0) {
+                const questionRows = task.selectedQuestionIds.map((questionId) =>
+                  manager.create(TaskQuestionMap, {
+                    task: createdTask,
+                    task_id: createdTask._id,
+                    question_id: questionId,
+                  }),
+                );
+                await manager.save(TaskQuestionMap, questionRows);
+              }
+
+              return {task: createdTask, payload: task};
+            }),
+          );
+
+          const invalidRefs: Array<{
+            taskRef: string;
+            invalidRefs: string[];
+          }> = [];
+          const pairSet = new Set<string>();
+          const rowsToLink: TaskSurvey[] = [];
+
+          createdTasks.forEach(({task, payload}, index) => {
+            const refs = [
+              ...(payload.linkedSurveyRefs || []),
+              ...(payload.SelectedSurvey ? [payload.SelectedSurvey] : []),
+            ];
+            if (refs.length === 0) {
+              return;
+            }
+
+            const uniqueRefs = [...new Set(refs)];
+            const unresolvedRefs = uniqueRefs.filter(
+              (ref) => !surveyRefToId.has(ref),
+            );
+
+            if (unresolvedRefs.length > 0) {
+              invalidRefs.push({
+                taskRef: payload.uuid || payload.title || `task_${index + 1}`,
+                invalidRefs: unresolvedRefs,
+              });
+              return;
+            }
+
+            uniqueRefs.forEach((ref) => {
+              const surveyId = surveyRefToId.get(ref);
+              const survey = surveyId ? createdSurveyMap.get(surveyId) : undefined;
+              if (!surveyId || !survey) {
+                invalidRefs.push({
+                  taskRef: payload.uuid || payload.title || `task_${index + 1}`,
+                  invalidRefs: [ref],
+                });
+                return;
+              }
+
+              const pairKey = `${task._id}:${surveyId}`;
+              if (pairSet.has(pairKey)) {
+                return;
+              }
+
+              pairSet.add(pairKey);
+              rowsToLink.push(
+                manager.create(TaskSurvey, {
+                  task,
+                  task_id: task._id,
+                  survey,
+                  survey_id: surveyId,
+                }),
+              );
+            });
+          });
+
+          if (invalidRefs.length > 0) {
+            throw new BadRequestException({
+              message: 'Invalid survey references in tasksProps.linkedSurveyRefs',
+              details: invalidRefs,
+            });
+          }
+
+          if (rowsToLink.length > 0) {
+            await manager
+              .createQueryBuilder()
+              .insert()
+              .into(TaskSurvey)
+              .values(
+                rowsToLink.map((row) => ({
+                  task_id: row.task_id,
+                  survey_id: row.survey_id,
+                })),
+              )
+              .orIgnore()
+              .execute();
+          }
+
+          await manager.save(
+            Icf,
+            manager.create(Icf, {
+              title: icf.title,
+              description: icf.description,
+              experiment: savedExperiment,
+            }),
+          );
+
+          return savedExperiment;
+      },
+    );
   }
 
   async findAll(): Promise<Experiment[]> {
@@ -221,6 +375,11 @@ export class ExperimentService {
       result.push({
         taskId: taskId,
         taskTitle: data.task.title,
+        taskType: data.task.search_source,
+        systemInstruction:
+          data.task.search_source === 'llm'
+            ? (data.task.provider_config?.systemInstruction ?? null)
+            : null,
         executions: executionsDetails,
       });
     }
@@ -254,9 +413,9 @@ export class ExperimentService {
     id: string,
     updateExperimentDto: UpdateExperimentDto,
   ): Promise<Experiment> {
-      await this.experimentRepository.update({_id: id}, updateExperimentDto);
-      const result = await this.find(id);
-      return result;
+    await this.experimentRepository.update({_id: id}, updateExperimentDto);
+    const result = await this.find(id);
+    return result;
   }
 
   async remove(id: string) {
@@ -307,10 +466,14 @@ export class ExperimentService {
   }
 
   async exportToYaml(id: string): Promise<string> {
-    const experiment = await this.experimentRepository.findOne({
-      where: {_id: id},
-      relations: ['tasks', 'surveys', 'icfs'],
-    });
+    const experiment = await this.experimentRepository
+      .createQueryBuilder('experiment')
+      .leftJoinAndSelect('experiment.tasks', 'task')
+      .addSelect('task.provider_config')
+      .leftJoinAndSelect('experiment.surveys', 'survey')
+      .leftJoinAndSelect('experiment.icfs', 'icf')
+      .where('experiment._id = :id', {id})
+      .getOne();
 
     if (!experiment) {
       throw new Error('Experiment not found');
@@ -342,20 +505,93 @@ export class ExperimentService {
             required: survey.required,
           })) || [],
         tasks:
-          experiment.tasks?.map((task) => ({
-            title: task.title,
-            summary: task.summary,
-            description: task.description,
-            rule_type: task.rule_type,
-            max_score: task.max_score,
-            min_score: task.min_score,
-            search_source: task.search_source,
-            survey_id: task.survey_id,
-          })) || [],
+          experiment.tasks?.map((task) => {
+            const providerConfig = this.buildYamlProviderConfig(task);
+            const yamlTask: YamlTask = {
+              title: task.title,
+              summary: task.summary,
+              description: task.description,
+              rule_type: task.rule_type,
+              max_score: task.max_score,
+              min_score: task.min_score,
+              search_source: task.search_source,
+              survey_id: task.survey_id,
+            };
+
+            const searchModel =
+              providerConfig?.model || providerConfig?.searchProvider;
+            if (searchModel) {
+              yamlTask.search_model = searchModel;
+            }
+            if (providerConfig?.systemInstruction) {
+              yamlTask.systemInstruction = providerConfig.systemInstruction;
+            }
+            if (providerConfig) {
+              yamlTask.provider_config = providerConfig;
+            }
+
+            return yamlTask;
+          }) || [],
       },
     };
 
     return yaml.dump(yamlData);
+  }
+
+  private buildYamlProviderConfig(task: Task): TaskProviderConfig | undefined {
+    const providerConfig = task.provider_config || {};
+    const yamlProviderConfig: TaskProviderConfig = {};
+
+    if (task.search_source === 'llm') {
+      if (providerConfig.modelProvider) {
+        yamlProviderConfig.modelProvider = providerConfig.modelProvider;
+      }
+      if (providerConfig.model) {
+        yamlProviderConfig.model = providerConfig.model;
+      }
+      if (providerConfig.systemInstruction) {
+        yamlProviderConfig.systemInstruction = providerConfig.systemInstruction;
+      }
+    }
+
+    if (
+      task.search_source === 'search-engine' &&
+      providerConfig.searchProvider
+    ) {
+      yamlProviderConfig.searchProvider = providerConfig.searchProvider;
+    }
+
+    return Object.keys(yamlProviderConfig).length > 0
+      ? yamlProviderConfig
+      : undefined;
+  }
+
+  private buildProviderConfigFromYaml(
+    task: YamlTask,
+  ): TaskProviderConfig | undefined {
+    const providerConfig: TaskProviderConfig = {
+      ...(task.provider_config || {}),
+    };
+
+    if (task.search_source === 'llm') {
+      providerConfig.modelProvider = providerConfig.modelProvider || 'google';
+      if (task.search_model && !providerConfig.model) {
+        providerConfig.model = task.search_model;
+      }
+      if (task.systemInstruction && !providerConfig.systemInstruction) {
+        providerConfig.systemInstruction = task.systemInstruction;
+      }
+    }
+
+    if (
+      task.search_source === 'search-engine' &&
+      task.search_model &&
+      !providerConfig.searchProvider
+    ) {
+      providerConfig.searchProvider = task.search_model;
+    }
+
+    return Object.keys(providerConfig).length > 0 ? providerConfig : undefined;
   }
 
   async importFromYaml(
@@ -441,6 +677,7 @@ export class ExperimentService {
             max_score: task.max_score || 0,
             questionsId: [],
             experiment_id: savedExperiment._id,
+            provider_config: this.buildProviderConfigFromYaml(task),
           });
         });
         await Promise.all(tasksPromises);
@@ -451,7 +688,7 @@ export class ExperimentService {
       console.error('Error importing YAML:', error);
       throw new Error(
         `Failed to import experiment: ${error instanceof Error ? error.message : 'unknown error'}`,
-        { cause: error },
+        {cause: error},
       );
     }
   }
